@@ -6,9 +6,11 @@
 #include <thread>
 #include <vector>
 
+
+#include <stations/join.hpp>
 #include <stations/split.hpp>
-#include <stations/chunk.hpp>
-#include <stations/workers.hpp>
+#include <stations/station.hpp>
+#include <stations/worker_queue.hpp>
 
 #include "read_integers_from_file.hpp"
 
@@ -39,7 +41,7 @@ is_prime(int number)
 void
 keep_primes(std::vector<int> & numbers)
 {
-  numbers.erase(std::remove_if(numbers.begin(), 
+  numbers.erase(std::remove_if(numbers.begin(),
                                numbers.end(),
                                [](int x){return !is_prime(x);}
                               ),
@@ -56,25 +58,24 @@ int main (int argc, char** argv)
     std::exit(1);
   }
 
-  // Read a file with positive integers. The format should be 
+  // Read a file with positive integers. The format should be
   stations::ReadIntegersFromFile riff(argv[1]);
   std::size_t const num_threads = std::stoi(argv[2]);
   riff.set_chunk_size(4096);
   std::size_t const MAX_QUEUE_SIZE = 2;
 
-  // 
   std::cout << "Number of threads are " << num_threads << "." << std::endl;
   std::cout << "Each chunk has " << riff.get_chunk_size() << " integers." << std::endl;
   std::cout << "Maximum queue size is " << MAX_QUEUE_SIZE << "." << std::endl;
 
   {
-    std::vector<std::shared_ptr<std::vector<int> > > all_ints;
+    std::vector<std::shared_ptr<std::vector<int> > > all_primes;
     stations::Station keep_primes_station(num_threads, MAX_QUEUE_SIZE);
 
     for (auto ints = riff(); ints->size() > 0; ints = riff())
     {
       keep_primes_station.add(keep_primes, ints);
-      all_ints.push_back(ints);
+      all_primes.push_back(ints);
     }
   }
 }

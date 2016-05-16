@@ -2,6 +2,8 @@
 #include <array>
 #include <thread>
 
+#include <stations/worker_queue.hpp>
+
 namespace stations
 {
 
@@ -40,21 +42,21 @@ class Station
 
   template<typename TWork, typename... Args>
   void inline
-  add(TWork work, Args... args)
+  add(TWork&& work, Args... args)
   {
     if (thread_count > 1)
     {
-        auto min_queue_it = std::min_element(queues.begin(),
-                                             queues.end(),
-                                             [](std::unique_ptr<WorkerQueue> const & q1, std::unique_ptr<WorkerQueue> const & q2)
-                                             {
-                                               return q1->get_number_of_items_in_queue() < q2->get_number_of_items_in_queue();
-                                             }
-                                            );
+      auto min_queue_it = std::min_element(queues.begin(),
+                                           queues.end(),
+                                           [](std::unique_ptr<WorkerQueue> const & q1, std::unique_ptr<WorkerQueue> const & q2)
+                                           {
+                                             return q1->get_number_of_items_in_queue() < q2->get_number_of_items_in_queue();
+                                           }
+                                          );
 
       if ((*min_queue_it)->queue_size < max_queue_size)
       {
-        (*min_queue_it)->add_work_to_queue(std::bind(work, std::ref(*args)...));
+        (*min_queue_it)->add_work_to_queue(std::bind(std::forward<TWork>(work), std::ref(*args)...));
         return;
       }
     }
@@ -64,9 +66,9 @@ class Station
   }
 
 
-  template<typename TWork, typename... Args> inline
-  void
-  add_to_thread(std::size_t const thread_id, TWork work, Args... args)
+  template<typename TWork, typename... Args>
+  void inline
+  add_to_thread(std::size_t const thread_id, TWork && work, Args... args)
   {
     if (thread_id % thread_count == thread_count - 1)
     {
@@ -75,11 +77,12 @@ class Station
     }
     else
     {
-      queues[thread_id % thread_count]->add_work_to_queue(std::bind(work, std::ref(*args)...));
+      queues[thread_id % thread_count]->add_work_to_queue(std::bind(std::forward<TWork>(work), std::ref(*args)...));
     }
   }
 
-  void join()
+  void inline
+  join()
   {
     std::cout << "Main thread processed " << main_thread_work_count << " chunks." << std::endl;
 

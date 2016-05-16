@@ -4,10 +4,10 @@
 #include <stdlib.h>
 #include <vector>
 
-#include <stations.hpp>
-// #include <stations/join.hpp>
-// #include <stations/workers.hpp>
-
+#include <stations/join.hpp>
+#include <stations/split.hpp>
+#include <stations/station.hpp>
+#include <stations/worker_queue.hpp>
 
 void
 get_random_ints(std::vector<int> & ints, std::size_t const & num_ints)
@@ -105,7 +105,7 @@ int main (int argc, char** argv)
 
   std::size_t d = 2;
 
-  // Merge sort the 
+  // Merge sort the split ints
   while (split_ints.size() > 1)
   {
     std::vector<int> merged_ints;

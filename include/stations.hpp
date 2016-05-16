@@ -16,7 +16,6 @@ class WorkerQueue
 {
  public:
   std::vector<std::function<void()> > function_queue;
-  // std::size_t d = 0; // Index of next delivered data
   bool finished = false;
   std::atomic<std::size_t> queue_size;
   std::size_t n = 0; // Index of next function to run

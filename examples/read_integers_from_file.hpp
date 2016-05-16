@@ -13,20 +13,9 @@ namespace stations
 class ReadIntegersFromFile
 {
  public:
-  /**
-   * CONSTRUCTOR, DECONSTRUCTOR AND OPTIONS
-   */
   ReadIntegersFromFile(std::string const file_name);
   ReadIntegersFromFile & set_chunk_size(std::size_t const chunk_size);
-
-  /**
-   * DATA ACCESS
-   */
   std::size_t get_chunk_size() const;
-
-  /**
-   * MODIFIERS
-   */
   std::shared_ptr<std::vector<int> > operator()();
 
  private:
