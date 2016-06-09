@@ -1,5 +1,6 @@
 #pragma once
 #include <assert.h>
+#include <algorithm>
 #include <atomic>
 #include <iostream>
 #include <iterator>
@@ -14,7 +15,7 @@ namespace stations
 
 class WorkerQueue
 {
- public:
+public:
   std::vector<std::function<void()> > function_queue;
   bool finished = false;
   std::atomic<std::size_t> queue_size;
@@ -25,6 +26,7 @@ class WorkerQueue
     queue_size = 0;
   }
 
+
   void inline
   add_work_to_queue(std::function<void()> work)
   {
@@ -32,17 +34,20 @@ class WorkerQueue
     ++queue_size;
   }
 
+
   std::size_t inline
   get_number_of_items_in_queue() const
   {
     return queue_size;
   }
 
+
   std::size_t inline
   get_number_of_completed_items() const
   {
     return n;
   }
+
 
   void inline
   operator()()
@@ -61,14 +66,18 @@ class WorkerQueue
       }
     }
   }
+
+
 };
 
 } // namespace stations
 
+
 namespace stations
 {
 
-template<typename TContainer> inline
+template <typename TContainer>
+inline
 void
 join(TContainer & container, std::vector<std::shared_ptr<TContainer> > & split_container)
 {
@@ -81,14 +90,16 @@ join(TContainer & container, std::vector<std::shared_ptr<TContainer> > & split_c
   }
 }
 
+
 } // namespace stations
+
 
 namespace stations
 {
 
 class Station
 {
- private:
+private:
   std::size_t const thread_count;
   std::size_t main_thread_work_count = 0;
   std::size_t const max_queue_size;
@@ -97,19 +108,20 @@ class Station
   bool joined = false;
 
 
- public:
+public:
   Station(std::size_t const _thread_count = 1, std::size_t const _max_queue_size = 2)
     : thread_count(_thread_count)
     , max_queue_size(_max_queue_size)
   {
     // WorkerQueue new_queue;
-    for (long i = 0; i < static_cast<long>(thread_count)-1; ++i)
+    for (long i = 0; i < static_cast<long>(thread_count) - 1; ++i)
     {
       std::unique_ptr<WorkerQueue> new_ptr(new WorkerQueue());
       queues.push_back(std::move(new_ptr));
       workers.push_back(std::thread(std::ref(*queues[i])));
     }
   }
+
 
   ~Station()
   {
@@ -119,60 +131,65 @@ class Station
     }
   }
 
-  template<typename TWork, typename... Args>
+
+  template <typename TWork, typename ... Args>
   void inline
-  add(TWork work, Args... args)
+  add(TWork && work, Args ... args)
   {
     if (thread_count > 1)
     {
-        auto min_queue_it = std::min_element(queues.begin(),
-                                             queues.end(),
-                                             [](std::unique_ptr<WorkerQueue> const & q1, std::unique_ptr<WorkerQueue> const & q2)
-                                             {
-                                               return q1->get_number_of_items_in_queue() < q2->get_number_of_items_in_queue();
-                                             }
-                                            );
+      auto min_queue_it = std::min_element(queues.begin(),
+                                           queues.end(),
+                                           [](std::unique_ptr<WorkerQueue> const & q1, std::unique_ptr<WorkerQueue> const & q2)
+        {
+          return q1->get_number_of_items_in_queue() < q2->get_number_of_items_in_queue();
+        }
+                                           );
 
       if ((*min_queue_it)->queue_size < max_queue_size)
       {
-        (*min_queue_it)->add_work_to_queue(std::bind(work, std::ref(*args)...));
+        (*min_queue_it)->add_work_to_queue(std::bind(std::forward<TWork>(work), std::ref(*args) ...));
         return;
       }
     }
 
-    work(std::ref(*args)...);
+    work(std::ref(*args) ...);
     ++main_thread_work_count;
   }
 
 
-  template<typename TWork, typename... Args> inline
-  void
-  add_to_thread(std::size_t const thread_id, TWork work, Args... args)
+  template <typename TWork, typename ... Args>
+  void inline
+  add_to_thread(std::size_t const thread_id, TWork && work, Args ... args)
   {
     if (thread_id % thread_count == thread_count - 1)
     {
-      work(std::ref(*args)...);
+      work(std::ref(*args) ...);
       ++main_thread_work_count;
     }
     else
     {
-      queues[thread_id % thread_count]->add_work_to_queue(std::bind(work, std::ref(*args)...));
+      queues[thread_id % thread_count]->add_work_to_queue(std::bind(std::forward<TWork>(work), std::ref(*args) ...));
     }
   }
 
-  void join()
+
+  void inline
+  join()
   {
     std::cout << "Main thread processed " << main_thread_work_count << " chunks." << std::endl;
 
-    for (long i = 0; i < static_cast<long>(thread_count)-1; ++i)
+    for (long i = 0; i < static_cast<long>(thread_count) - 1; ++i)
     {
       queues[i]->finished = true;
       workers[i].join();
-      std::cout << "Thread " << (i+1) << " processed " << queues[i]->get_number_of_completed_items() << " chunks." << std::endl;
+      std::cout << "Thread " << (i + 1) << " processed " << queues[i]->get_number_of_completed_items() << " chunks." << std::endl;
     }
 
     joined = true;
   }
+
+
 };
 
 } // namespace stations
@@ -181,31 +198,33 @@ class Station
 namespace stations
 {
 
-template<typename TContainer> inline
+template <typename TContainer>
+inline
 std::vector<std::shared_ptr<TContainer> >
 split(TContainer & container, std::size_t const PARTS)
 {
-  assert (PARTS > 0);
+  assert(PARTS > 0);
   std::vector<std::shared_ptr<TContainer> > split_container;
   split_container.resize(PARTS);
   std::size_t const container_original_size = container.size();
 
-  for (long i = static_cast<long>(PARTS)-1; i >= 0; --i)
+  for (long i = static_cast<long>(PARTS) - 1; i >= 0; --i)
   {
     std::size_t const part_size = container_original_size / PARTS + (container_original_size % PARTS > static_cast<std::size_t>(i));
     split_container[i] =
       std::make_shared<TContainer>(std::make_move_iterator(std::next(container.end(), -part_size)),
                                    std::make_move_iterator(container.end())
-                                  );
+                                   );
 
     // Make sure the container is smaller now
-    if (container.size() > i*(container_original_size / PARTS + 1))
+    if (container.size() > i * (container_original_size / PARTS + 1))
     {
-      container.resize(i*(container_original_size / PARTS + 1));
+      container.resize(i * (container_original_size / PARTS + 1));
     }
   }
 
   return split_container;
 }
+
 
 } // namespace stations

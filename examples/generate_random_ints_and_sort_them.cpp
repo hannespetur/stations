@@ -59,9 +59,10 @@ merge_two_sorted_vectors(std::vector<int> & merged, std::vector<int> const & i1,
 }
 
 
-int main (int argc, char** argv)
+int
+main(int argc, char ** argv)
 {
-  srand (42); // Seed is 42
+  srand(42);  // Seed is 42
 
   if (argc != 3)
   {
@@ -97,9 +98,9 @@ int main (int argc, char** argv)
     for (std::size_t i = 0; i < static_cast<std::size_t>(num_threads); ++i)
     {
       sort_station.add_to_thread(i /*thread_id*/,
-                       sort_ints /*function*/,
-                       split_ints[i] /*data*/
-                      );
+                                 sort_ints /*function*/,
+                                 split_ints[i] /*data*/
+                                 );
     }
   }
 
@@ -112,11 +113,11 @@ int main (int argc, char** argv)
     auto new_split_ints = stations::split(merged_ints, num_threads / d);
 
     {
-      stations::Station merge_sort_station(num_threads / d, 1);
+      stations::Station merge_sort_station(num_threads / d /*num threads*/, 1 /*queue size*/);
 
       for (std::size_t i = 0; i < static_cast<std::size_t>(num_threads / d); ++i)
       {
-        merge_sort_station.add_to_thread(i, merge_two_sorted_vectors, new_split_ints[i], split_ints[2*i], split_ints[2*i+1]);
+        merge_sort_station.add_to_thread(i, merge_two_sorted_vectors, new_split_ints[i], split_ints[2 * i], split_ints[2 * i + 1]);
       }
     }
 
@@ -130,7 +131,7 @@ int main (int argc, char** argv)
   ints = *split_ints.at(0);
 
   auto end = std::chrono::system_clock::now();
-  std::chrono::duration<double> diff = end-start;
+  std::chrono::duration<double> diff = end - start;
   std::cout << "Total number of ints sorted are " << ints.size() << std::endl;
   std::cout << "Sorting duration was " << diff.count() << " seconds." << std::endl;
 
