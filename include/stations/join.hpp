@@ -1,11 +1,13 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 namespace stations
 {
 
-template<typename TContainer> inline
+template <typename TContainer>
+inline
 void
 join(TContainer & container, std::vector<std::shared_ptr<TContainer> > & split_container)
 {
@@ -17,5 +19,23 @@ join(TContainer & container, std::vector<std::shared_ptr<TContainer> > & split_c
     split_container[i]->clear();
   }
 }
+
+
+template <typename TContainer, typename Function>
+inline
+void
+join(TContainer & map, std::vector<std::shared_ptr<TContainer> > & split_map, Function merge_fun)
+{
+  std::size_t const PARTS = split_map.size();
+
+  for (auto & a_map : split_map)
+  {
+    for (typename TContainer::iterator it = a_map->begin(); it != a_map->end(); ++it)
+      merge_fun(map, it);
+
+    a_map->clear(); // Free memory
+  }
+}
+
 
 } // namespace stations
