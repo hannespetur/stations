@@ -60,6 +60,10 @@ public:
       {
         return;
       }
+      else
+      {
+        std::this_thread::sleep_for(std::chrono::microseconds(100)); // 0.1 ms
+      }
     }
   }
 
