@@ -177,13 +177,13 @@ public:
   void inline
   join()
   {
-    std::cout << "Main thread processed " << main_thread_work_count << " chunks." << std::endl;
+    std::cout << "Main thread processed " << main_thread_work_count << " items." << std::endl;
 
     for (long i = 0; i < static_cast<long>(thread_count) - 1; ++i)
     {
       queues[i]->finished = true;
       workers[i].join();
-      std::cout << "Thread " << (i + 1) << " processed " << queues[i]->get_number_of_completed_items() << " chunks." << std::endl;
+      std::cout << "Thread " << (i + 1) << " processed " << queues[i]->get_number_of_completed_items() << " items." << std::endl;
     }
 
     joined = true;
