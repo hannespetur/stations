@@ -24,7 +24,7 @@ public:
     : thread_count(_thread_count)
     , max_queue_size(_max_queue_size)
   {
-    // WorkerQueue new_queue;
+    // If thread_count == 0 then thread_count == 1 is used (only boss thread will be used)
     for (long i = 0; i < static_cast<long>(thread_count) - 1; ++i)
     {
       std::unique_ptr<WorkerQueue> new_ptr(new WorkerQueue());
@@ -37,9 +37,7 @@ public:
   ~Station()
   {
     if (not joined)
-    {
       join();
-    }
   }
 
 
