@@ -12,7 +12,8 @@ namespace stations
 class WorkerQueue
 {
 public:
-  std::list<std::function<void()> > function_queue;
+  std::list<std::function<void()> > function_queue; // Use std::list because pushing back to lists does not invalidate previous iterators
+  std::list<std::function<void()> >::iterator item_to_run;
   bool finished = false;
   std::atomic<std::size_t> queue_size;
   std::size_t completed_items = 0;
@@ -26,7 +27,11 @@ public:
   void inline
   add_work_to_queue(std::function<void()> work)
   {
-    function_queue.push_back(work); // Pushing back to lists does not invalidate iterators(!)
+    function_queue.push_back(work);
+
+    if (queue_size == 0 && completed_items == 0)
+      item_to_run = function_queue.begin();
+
     ++queue_size;
   }
 
@@ -51,8 +56,9 @@ public:
     {
       if (queue_size > 0)
       {
-        auto item_to_run = function_queue.begin();
-        std::advance(item_to_run, completed_items);
+        if (completed_items != 0)
+          ++item_to_run;
+
         (*item_to_run)();
         ++completed_items;
         --queue_size;
