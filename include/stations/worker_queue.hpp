@@ -13,13 +13,11 @@ class WorkerQueue
 {
 public:
   std::list<std::function<void()> > function_queue;
-  std::list<std::function<void()> >::iterator queue_it;
   bool finished = false;
   std::atomic<std::size_t> queue_size;
   std::size_t completed_items = 0;
 
   WorkerQueue()
-    : queue_it(function_queue.end())
   {
     queue_size = 0;
   }
@@ -29,11 +27,6 @@ public:
   add_work_to_queue(std::function<void()> work)
   {
     function_queue.push_back(work); // Pushing back to lists does not invalidate iterators(!)
-
-    // If this is the first element in the queue,
-    if (queue_size == 0)
-      queue_it = function_queue.begin();
-
     ++queue_size;
   }
 
@@ -58,8 +51,9 @@ public:
     {
       if (queue_size > 0)
       {
-        (*queue_it)();
-        ++queue_it;
+        auto item_to_run = function_queue.begin();
+        std::advance(item_to_run, completed_items);
+        (*item_to_run)();
         ++completed_items;
         --queue_size;
       }

@@ -1,9 +1,8 @@
-#include <algorithm>
-#include <array>
-#include <iostream>
-#include <thread>
+#include <algorithm> // std::min_element
+#include <iostream> // std::cout, std::endl
+#include <thread> // std::thread
 
-#include <stations/worker_queue.hpp>
+#include <stations/worker_queue.hpp> // stations::WorkerQueue
 
 namespace stations
 {
@@ -41,9 +40,9 @@ public:
   }
 
 
-  template <typename TWork, typename ... Args>
+  template <typename TWork, typename... Args>
   void inline
-  add(TWork && work, Args ... args)
+  add(TWork && work, Args... args)
   {
     if (thread_count > 1)
     {
@@ -57,28 +56,28 @@ public:
 
       if ((*min_queue_it)->queue_size < max_queue_size)
       {
-        (*min_queue_it)->add_work_to_queue(std::bind(std::forward<TWork>(work), std::ref(*args) ...));
+        (*min_queue_it)->add_work_to_queue(std::bind(std::forward<TWork>(work), args...));
         return;
       }
     }
 
-    work(std::ref(*args) ...);
+    work(args...);
     ++main_thread_work_count;
   }
 
 
   template <typename TWork, typename ... Args>
   void inline
-  add_to_thread(std::size_t const thread_id, TWork && work, Args ... args)
+  add_to_thread(std::size_t const thread_id, TWork && work, Args... args)
   {
     if (thread_id % thread_count == thread_count - 1)
     {
-      work(std::ref(*args) ...);
+      work(args...);
       ++main_thread_work_count;
     }
     else
     {
-      queues[thread_id % thread_count]->add_work_to_queue(std::bind(std::forward<TWork>(work), std::ref(*args) ...));
+      queues[thread_id % thread_count]->add_work_to_queue(std::bind(std::forward<TWork>(work), args...));
     }
   }
 

@@ -1,12 +1,9 @@
 #pragma once
-#include <assert.h>
-#include <atomic>
-#include <iostream>
-#include <iterator>
-#include <memory>
-#include <thread>
-#include <vector>
 
+#include <atomic> // std::atomic
+#include <iostream> // std::cout, std::endl
+#include <thread> // std::this_thread::sleep_for
+#include <list> // std::list
 
 
 namespace stations
@@ -16,13 +13,11 @@ class WorkerQueue
 {
 public:
   std::list<std::function<void()> > function_queue;
-  std::list<std::function<void()> >::iterator queue_it;
   bool finished = false;
   std::atomic<std::size_t> queue_size;
   std::size_t completed_items = 0;
 
   WorkerQueue()
-    : queue_it(function_queue.end())
   {
     queue_size = 0;
   }
@@ -32,11 +27,6 @@ public:
   add_work_to_queue(std::function<void()> work)
   {
     function_queue.push_back(work); // Pushing back to lists does not invalidate iterators(!)
-
-    // If this is the first element in the queue,
-    if (queue_size == 0)
-      queue_it = function_queue.begin();
-
     ++queue_size;
   }
 
@@ -61,8 +51,9 @@ public:
     {
       if (queue_size > 0)
       {
-        (*queue_it)();
-        ++queue_it;
+        auto item_to_run = function_queue.begin();
+        std::advance(item_to_run, completed_items);
+        (*item_to_run)();
         ++completed_items;
         --queue_size;
       }
@@ -81,7 +72,11 @@ public:
 };
 
 } // namespace stations
+#include <algorithm> // std::min_element
+#include <iostream> // std::cout, std::endl
+#include <thread> // std::thread
 
+#include <stations/worker_queue.hpp> // stations::WorkerQueue
 
 namespace stations
 {
@@ -119,9 +114,9 @@ public:
   }
 
 
-  template <typename TWork, typename ... Args>
+  template <typename TWork, typename... Args>
   void inline
-  add(TWork && work, Args ... args)
+  add(TWork && work, Args... args)
   {
     if (thread_count > 1)
     {
@@ -135,28 +130,28 @@ public:
 
       if ((*min_queue_it)->queue_size < max_queue_size)
       {
-        (*min_queue_it)->add_work_to_queue(std::bind(std::forward<TWork>(work), std::ref(*args) ...));
+        (*min_queue_it)->add_work_to_queue(std::bind(std::forward<TWork>(work), args...));
         return;
       }
     }
 
-    work(std::ref(*args) ...);
+    work(args...);
     ++main_thread_work_count;
   }
 
 
   template <typename TWork, typename ... Args>
   void inline
-  add_to_thread(std::size_t const thread_id, TWork && work, Args ... args)
+  add_to_thread(std::size_t const thread_id, TWork && work, Args... args)
   {
     if (thread_id % thread_count == thread_count - 1)
     {
-      work(std::ref(*args) ...);
+      work(args...);
       ++main_thread_work_count;
     }
     else
     {
-      queues[thread_id % thread_count]->add_work_to_queue(std::bind(std::forward<TWork>(work), std::ref(*args) ...));
+      queues[thread_id % thread_count]->add_work_to_queue(std::bind(std::forward<TWork>(work), args...));
     }
   }
 
@@ -180,6 +175,9 @@ public:
 };
 
 } // namespace stations
+#include <iterator> // std::next, std::make_move_iterator
+#include <memory> // std::shared_ptr
+#include <vector> // std::vector
 
 
 namespace stations
@@ -189,7 +187,6 @@ template<typename TContainer> inline
 std::vector<std::shared_ptr<TContainer> >
 split(TContainer & container, std::size_t const PARTS)
 {
-  assert (PARTS > 0);
   std::vector<std::shared_ptr<TContainer> > split_container;
   split_container.resize(PARTS);
   std::size_t const container_original_size = container.size();
@@ -214,6 +211,8 @@ split(TContainer & container, std::size_t const PARTS)
 
 } // namespace stations
 
+#include <memory> // std::shared_ptr
+#include <vector> // std::vector
 
 namespace stations
 {
