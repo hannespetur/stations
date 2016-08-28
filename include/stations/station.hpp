@@ -1,6 +1,6 @@
-#include <algorithm>
-#include <array>
+#pragma once
 #include <iostream>
+#include <array>
 #include <thread>
 
 #include <stations/worker_queue.hpp>
