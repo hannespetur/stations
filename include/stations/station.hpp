@@ -1,9 +1,9 @@
 #pragma once
-#include <iostream>
-#include <array>
-#include <thread>
+#include <algorithm> // std::min_element
+#include <iostream> // std::cout, std::endl
+#include <thread> // std::thread
 
-#include <stations/worker_queue.hpp>
+#include <stations/worker_queue.hpp> // stations::WorkerQueue
 
 namespace stations
 {
@@ -24,7 +24,7 @@ public:
     : thread_count(_thread_count)
     , max_queue_size(_max_queue_size)
   {
-    // WorkerQueue new_queue;
+    // If thread_count == 0 then thread_count == 1 is used (only boss thread will be used)
     for (long i = 0; i < static_cast<long>(thread_count) - 1; ++i)
     {
       std::unique_ptr<WorkerQueue> new_ptr(new WorkerQueue());
@@ -37,15 +37,13 @@ public:
   ~Station()
   {
     if (not joined)
-    {
       join();
-    }
   }
 
 
-  template <typename TWork, typename ... Args>
+  template <typename TWork, typename... Args>
   void inline
-  add(TWork && work, Args ... args)
+  add(TWork && work, Args... args)
   {
     if (thread_count > 1)
     {
@@ -59,28 +57,28 @@ public:
 
       if ((*min_queue_it)->queue_size < max_queue_size)
       {
-        (*min_queue_it)->add_work_to_queue(std::bind(std::forward<TWork>(work), std::ref(*args) ...));
+        (*min_queue_it)->add_work_to_queue(std::bind(std::forward<TWork>(work), args...));
         return;
       }
     }
 
-    work(std::ref(*args) ...);
+    work(args...);
     ++main_thread_work_count;
   }
 
 
   template <typename TWork, typename ... Args>
   void inline
-  add_to_thread(std::size_t const thread_id, TWork && work, Args ... args)
+  add_to_thread(std::size_t const thread_id, TWork && work, Args... args)
   {
     if (thread_id % thread_count == thread_count - 1)
     {
-      work(std::ref(*args) ...);
+      work(args...);
       ++main_thread_work_count;
     }
     else
     {
-      queues[thread_id % thread_count]->add_work_to_queue(std::bind(std::forward<TWork>(work), std::ref(*args) ...));
+      queues[thread_id % thread_count]->add_work_to_queue(std::bind(std::forward<TWork>(work), args...));
     }
   }
 

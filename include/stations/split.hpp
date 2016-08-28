@@ -1,9 +1,7 @@
 #pragma once
-#include <assert.h>
-#include <iostream>
-#include <iterator>
-#include <memory>
-#include <vector>
+#include <iterator> // std::next, std::make_move_iterator
+#include <memory> // std::shared_ptr
+#include <vector> // std::vector
 
 
 namespace stations
@@ -14,7 +12,6 @@ inline
 std::vector<std::shared_ptr<TContainer> >
 split(TContainer & container, std::size_t const PARTS)
 {
-  assert(PARTS > 0);
   std::vector<std::shared_ptr<TContainer> > split_container;
   split_container.resize(PARTS);
   std::size_t const container_original_size = container.size();

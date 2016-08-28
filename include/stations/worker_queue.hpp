@@ -1,9 +1,9 @@
 #pragma once
 
-#include <algorithm>
-#include <atomic>
-#include <iostream>
-#include <thread>
+#include <atomic> // std::atomic
+#include <iostream> // std::cout, std::endl
+#include <thread> // std::this_thread::sleep_for
+#include <list> // std::list
 
 
 namespace stations
@@ -12,10 +12,11 @@ namespace stations
 class WorkerQueue
 {
 public:
-  std::vector<std::function<void()> > function_queue;
+  std::list<std::function<void()> > function_queue; // Use std::list because pushing back to lists does not invalidate previous iterators
+  std::list<std::function<void()> >::iterator item_to_run;
   bool finished = false;
   std::atomic<std::size_t> queue_size;
-  std::size_t n = 0; // Index of next function to run
+  std::size_t completed_items = 0;
 
   WorkerQueue()
   {
@@ -27,6 +28,10 @@ public:
   add_work_to_queue(std::function<void()> work)
   {
     function_queue.push_back(work);
+
+    if (queue_size == 0 && completed_items == 0)
+      item_to_run = function_queue.begin();
+
     ++queue_size;
   }
 
@@ -41,9 +46,8 @@ public:
   std::size_t inline
   get_number_of_completed_items() const
   {
-    return n;
+    return completed_items;
   }
-
 
   void inline
   operator()()
@@ -52,8 +56,11 @@ public:
     {
       if (queue_size > 0)
       {
-        function_queue[n]();
-        ++n;
+        if (completed_items != 0)
+          ++item_to_run;
+
+        (*item_to_run)();
+        ++completed_items;
         --queue_size;
       }
       else if (finished)

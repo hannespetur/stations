@@ -1,13 +1,9 @@
 #pragma once
-#include <assert.h>
-#include <algorithm>
-#include <atomic>
-#include <iostream>
-#include <iterator>
-#include <memory>
-#include <thread>
-#include <vector>
 
+#include <atomic> // std::atomic
+#include <iostream> // std::cout, std::endl
+#include <thread> // std::this_thread::sleep_for
+#include <list> // std::list
 
 
 namespace stations
@@ -16,10 +12,10 @@ namespace stations
 class WorkerQueue
 {
 public:
-  std::vector<std::function<void()> > function_queue;
+  std::list<std::function<void()> > function_queue;
   bool finished = false;
   std::atomic<std::size_t> queue_size;
-  std::size_t n = 0; // Index of next function to run
+  std::size_t completed_items = 0;
 
   WorkerQueue()
   {
@@ -30,7 +26,7 @@ public:
   void inline
   add_work_to_queue(std::function<void()> work)
   {
-    function_queue.push_back(work);
+    function_queue.push_back(work); // Pushing back to lists does not invalidate iterators(!)
     ++queue_size;
   }
 
@@ -45,9 +41,8 @@ public:
   std::size_t inline
   get_number_of_completed_items() const
   {
-    return n;
+    return completed_items;
   }
-
 
   void inline
   operator()()
@@ -56,13 +51,19 @@ public:
     {
       if (queue_size > 0)
       {
-        function_queue[n]();
-        ++n;
+        auto item_to_run = function_queue.begin();
+        std::advance(item_to_run, completed_items);
+        (*item_to_run)();
+        ++completed_items;
         --queue_size;
       }
       else if (finished)
       {
         return;
+      }
+      else
+      {
+        std::this_thread::sleep_for(std::chrono::microseconds(100)); // 0.1 ms
       }
     }
   }
@@ -71,28 +72,11 @@ public:
 };
 
 } // namespace stations
+#include <algorithm> // std::min_element
+#include <iostream> // std::cout, std::endl
+#include <thread> // std::thread
 
-
-namespace stations
-{
-
-template <typename TContainer>
-inline
-void
-join(TContainer & container, std::vector<std::shared_ptr<TContainer> > & split_container)
-{
-  std::size_t const PARTS = split_container.size();
-
-  for (std::size_t i = 0; i < PARTS; ++i)
-  {
-    std::move(split_container[i]->begin(), split_container[i]->end(), std::back_inserter(container));
-    split_container[i]->clear();
-  }
-}
-
-
-} // namespace stations
-
+#include <stations/worker_queue.hpp> // stations::WorkerQueue
 
 namespace stations
 {
@@ -113,7 +97,7 @@ public:
     : thread_count(_thread_count)
     , max_queue_size(_max_queue_size)
   {
-    // WorkerQueue new_queue;
+    // If thread_count == 0 then thread_count == 1 is used (only boss thread will be used)
     for (long i = 0; i < static_cast<long>(thread_count) - 1; ++i)
     {
       std::unique_ptr<WorkerQueue> new_ptr(new WorkerQueue());
@@ -126,15 +110,13 @@ public:
   ~Station()
   {
     if (not joined)
-    {
       join();
-    }
   }
 
 
-  template <typename TWork, typename ... Args>
+  template <typename TWork, typename... Args>
   void inline
-  add(TWork && work, Args ... args)
+  add(TWork && work, Args... args)
   {
     if (thread_count > 1)
     {
@@ -148,28 +130,28 @@ public:
 
       if ((*min_queue_it)->queue_size < max_queue_size)
       {
-        (*min_queue_it)->add_work_to_queue(std::bind(std::forward<TWork>(work), std::ref(*args) ...));
+        (*min_queue_it)->add_work_to_queue(std::bind(std::forward<TWork>(work), args...));
         return;
       }
     }
 
-    work(std::ref(*args) ...);
+    work(args...);
     ++main_thread_work_count;
   }
 
 
   template <typename TWork, typename ... Args>
   void inline
-  add_to_thread(std::size_t const thread_id, TWork && work, Args ... args)
+  add_to_thread(std::size_t const thread_id, TWork && work, Args... args)
   {
     if (thread_id % thread_count == thread_count - 1)
     {
-      work(std::ref(*args) ...);
+      work(args...);
       ++main_thread_work_count;
     }
     else
     {
-      queues[thread_id % thread_count]->add_work_to_queue(std::bind(std::forward<TWork>(work), std::ref(*args) ...));
+      queues[thread_id % thread_count]->add_work_to_queue(std::bind(std::forward<TWork>(work), args...));
     }
   }
 
@@ -193,37 +175,77 @@ public:
 };
 
 } // namespace stations
+#include <iterator> // std::next, std::make_move_iterator
+#include <memory> // std::shared_ptr
+#include <vector> // std::vector
 
+
+namespace stations
+{
+
+template<typename TContainer> inline
+std::vector<std::shared_ptr<TContainer> >
+split(TContainer & container, std::size_t const PARTS)
+{
+  std::vector<std::shared_ptr<TContainer> > split_container;
+  split_container.resize(PARTS);
+  std::size_t const container_original_size = container.size();
+
+  for (long i = static_cast<long>(PARTS)-1; i >= 0; --i)
+  {
+    std::size_t const part_size = container_original_size / PARTS + (container_original_size % PARTS > static_cast<std::size_t>(i));
+    split_container[i] =
+      std::make_shared<TContainer>(std::make_move_iterator(std::next(container.end(), -part_size)),
+                                   std::make_move_iterator(container.end())
+                                  );
+
+    // Make sure the container is smaller now
+    if (container.size() > i*(container_original_size / PARTS + 1))
+    {
+      container.resize(i*(container_original_size / PARTS + 1));
+    }
+  }
+
+  return split_container;
+}
+
+} // namespace stations
+
+#include <memory> // std::shared_ptr
+#include <vector> // std::vector
 
 namespace stations
 {
 
 template <typename TContainer>
 inline
-std::vector<std::shared_ptr<TContainer> >
-split(TContainer & container, std::size_t const PARTS)
+void
+join(TContainer & container, std::vector<std::shared_ptr<TContainer> > & split_container)
 {
-  assert(PARTS > 0);
-  std::vector<std::shared_ptr<TContainer> > split_container;
-  split_container.resize(PARTS);
-  std::size_t const container_original_size = container.size();
+  std::size_t const PARTS = split_container.size();
 
-  for (long i = static_cast<long>(PARTS) - 1; i >= 0; --i)
+  for (std::size_t i = 0; i < PARTS; ++i)
   {
-    std::size_t const part_size = container_original_size / PARTS + (container_original_size % PARTS > static_cast<std::size_t>(i));
-    split_container[i] =
-      std::make_shared<TContainer>(std::make_move_iterator(std::next(container.end(), -part_size)),
-                                   std::make_move_iterator(container.end())
-                                   );
-
-    // Make sure the container is smaller now
-    if (container.size() > i * (container_original_size / PARTS + 1))
-    {
-      container.resize(i * (container_original_size / PARTS + 1));
-    }
+    std::move(split_container[i]->begin(), split_container[i]->end(), std::back_inserter(container));
+    split_container[i]->clear();
   }
+}
 
-  return split_container;
+
+template <typename TContainer, typename Function>
+inline
+void
+join(TContainer & map, std::vector<std::shared_ptr<TContainer> > & split_map, Function merge_fun)
+{
+  std::size_t const PARTS = split_map.size();
+
+  for (auto & a_map : split_map)
+  {
+    for (typename TContainer::iterator it = a_map->begin(); it != a_map->end(); ++it)
+      merge_fun(map, it);
+
+    a_map->clear(); // Free memory
+  }
 }
 
 

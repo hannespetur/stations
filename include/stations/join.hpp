@@ -1,7 +1,7 @@
 #pragma once
 
-#include <memory>
-#include <vector>
+#include <memory> // std::shared_ptr
+#include <vector> // std::vector
 
 namespace stations
 {
