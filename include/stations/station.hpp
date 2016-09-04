@@ -18,8 +18,15 @@ private:
   std::vector<std::unique_ptr<WorkerQueue> > queues;
   bool joined = false;
 
-
 public:
+  /**
+   * Instance variables
+   */
+  bool verbose = false; // Set to true to output statistics about the thread distribution at the end of the run.
+
+  /**
+   * Class member functions
+   */
   Station(std::size_t const _thread_count = 1, std::size_t const _max_queue_size = 2)
     : thread_count(_thread_count)
     , max_queue_size(_max_queue_size)
@@ -86,19 +93,20 @@ public:
   void inline
   join()
   {
-    std::cout << "Main thread processed " << main_thread_work_count << " chunks." << std::endl;
+    if (verbose)
+      std::cout << "Main thread processed " << main_thread_work_count << " chunks." << std::endl;
 
     for (long i = 0; i < static_cast<long>(thread_count) - 1; ++i)
     {
       queues[i]->finished = true;
       workers[i].join();
-      std::cout << "Thread " << (i + 1) << " processed " << queues[i]->get_number_of_completed_items() << " chunks." << std::endl;
+
+      if (verbose)
+        std::cout << "Thread " << (i + 1) << " processed " << queues[i]->get_number_of_completed_items() << " chunks." << std::endl;
     }
 
     joined = true;
   }
-
-
 };
 
 } // namespace stations

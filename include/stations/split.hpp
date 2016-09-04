@@ -41,7 +41,6 @@ std::vector<std::shared_ptr<std::vector<typename BidirectionalIterator::value_ty
 split(BidirectionalIterator first, BidirectionalIterator last, std::size_t const PARTS)
 {
   using TContainer = std::vector<typename BidirectionalIterator::value_type>;
-  assert(PARTS > 0);
   std::vector<std::shared_ptr<TContainer> > split_container;
   split_container.resize(PARTS);
   std::size_t const container_original_size = std::distance(first, last);

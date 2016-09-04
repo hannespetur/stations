@@ -1,4 +1,5 @@
 cmake_minimum_required (VERSION 2.8.11)
+project (stations CXX)
 
 add_executable(read_ints_and_keep_primes_only read_ints_and_keep_primes_only.cpp)
 add_executable(generate_random_ints_and_sort_them generate_random_ints_and_sort_them.cpp)

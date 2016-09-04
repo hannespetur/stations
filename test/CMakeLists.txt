@@ -1,0 +1,18 @@
+cmake_minimum_required (VERSION 2.8.11)
+project (stations CXX)
+
+set(stations_test_files
+  test.cpp
+  test_sort.cpp
+)
+
+# Include "Catch" library
+include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/catch/single_include)
+
+add_executable(test_stations ${stations_test_files})
+
+# Link to threading library (pthreads on linux)
+target_link_libraries (test_stations ${CMAKE_THREAD_LIBS_INIT})
+
+add_test(NAME CatchTests COMMAND test_stations)
