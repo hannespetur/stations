@@ -7,7 +7,7 @@
 namespace stations_internal
 {
 
-/** Returns a number with a single bit set, the bit set is the most significant bit of the input. If the input is 0, 1 is returned. Examples:
+/** Returns a number with a single bit set, the bit set is the most significant bit of the input. If the input is 0, then 1 is returned. Examples:
  * highest_ordered_bit(0) = 1
  * highest_ordered_bit(1) = 1
  * highest_ordered_bit(2) = 2
@@ -29,19 +29,11 @@ highest_ordered_bit(T num)
 }
 
 
-template <typename TContainer>
-void inline
-sort_ints(std::shared_ptr<TContainer> ints)
-{
-  std::sort(ints->begin(), ints->end());
-}
-
-
 template <typename TVector>
 void inline
 merge_two_sorted_vectors(std::shared_ptr<TVector> merged, std::shared_ptr<TVector> i1, std::shared_ptr<TVector> i2)
 {
-  // Make sure merged is empty initially
+  // Make sure merged vector is empty initially
   merged->clear();
 
   // If either sorted vector is empty, the other is the merged vector.
@@ -56,7 +48,7 @@ merge_two_sorted_vectors(std::shared_ptr<TVector> merged, std::shared_ptr<TVecto
     return;
   }
 
-  merged->reserve(i1->size() + i2->size());
+  // merged->reserve(i1->size() + i2->size());
   std::size_t i = 0;
   std::size_t j = 0;
 
@@ -88,5 +80,6 @@ merge_two_sorted_vectors(std::shared_ptr<TVector> merged, std::shared_ptr<TVecto
     }
   }
 }
+
 
 } // namespace stations_internal
