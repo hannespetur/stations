@@ -1,6 +1,7 @@
 #include <catch.hpp>
 
 #include <algorithm> // std::is_sorted
+#include <array> // std::array
 #include <deque> // std::deque
 #include <list> // std::list
 #include <vector> // std::vector
@@ -63,6 +64,51 @@ TEST_CASE("Sorting containers of size 1")
 
  SECTION("Large deque of integers")
    check_small_ints<std::deque<int> >();
+}
+
+
+/****************************
+ * Sorting simple container *
+ ****************************/
+template<typename T>
+void
+check_simple_floats()
+{
+  std::array<float, 7> const initial_floats  = {0.5f, 0.2f, 0.1f, 100.0f, -0.2f, 0.4f, 0.9f};
+  std::array<float, 7> const expected_floats = {-0.2f, 0.1f, 0.2f, 0.4f, 0.5f, 0.9f, 100.0f};
+  T floats;
+
+  for (auto it = initial_floats.cbegin(); it != initial_floats.cend(); ++it)
+    floats.push_back(*it);
+
+  REQUIRE(floats.size() == 7);
+  REQUIRE(!std::is_sorted(floats.begin(), floats.end()));
+  stations::sort(8, floats.begin(), floats.end());
+  REQUIRE(std::is_sorted(floats.begin(), floats.end()));
+
+  // Iterator over both the array and the container
+  auto it1 = expected_floats.cbegin();
+  auto it2 = floats.cbegin();
+
+  while (it1 != expected_floats.cend())
+  {
+    REQUIRE(*it1 == *it2);
+    ++it1;
+    ++it2;
+  }
+}
+
+
+TEST_CASE("Sorting simple container")
+{
+  SECTION("Simple vector of integers")
+    check_simple_floats<std::vector<float> >();
+
+  SECTION("Simple list of integers")
+    check_simple_floats<std::list<float> >();
+
+  SECTION("Simple deque of integers")
+    check_simple_floats<std::deque<float> >();
 }
 
 
