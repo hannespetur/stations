@@ -5,6 +5,8 @@ set(stations_test_files
   test.cpp
   test_internal.cpp
   test_sort.cpp
+  test_split.cpp
+  test_split_iterator.cpp
 )
 
 # Include "Catch" library

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <iterator> // std::next, std::make_move_iterator
 #include <memory> // std::shared_ptr
 #include <vector> // std::vector
@@ -26,9 +27,7 @@ split(TContainer & container, std::size_t const PARTS)
 
     // Make sure the container is smaller now
     if (container.size() > i * (container_original_size / PARTS + 1))
-    {
       container.resize(i * (container_original_size / PARTS + 1));
-    }
   }
 
   return split_container;
