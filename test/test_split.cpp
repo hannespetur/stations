@@ -17,14 +17,25 @@ TEST_CASE("Split an empty vector")
     auto split_doubles = stations::split(doubles, 1 /*PARTS*/);
     REQUIRE(split_doubles.size() == 1);
     REQUIRE(split_doubles[0]->size() == 0);
+
+    // Split by iterators results in the same vector
+    auto split_doubles_by_it = stations::split(doubles.begin(), doubles.end(), 1 /*PARTS*/);
+    REQUIRE(split_doubles_by_it.size() == 1);
+    REQUIRE(split_doubles_by_it[0]->size() == 0);
   }
 
   SECTION("Two parts")
   {
-    std::vector<std::shared_ptr<std::vector<double> > > split_doubles = stations::split(doubles, 2 /*PARTS*/);
+    auto split_doubles = stations::split(doubles, 2 /*PARTS*/);
     REQUIRE(split_doubles.size() == 2);
     auto find_it = std::find_if(split_doubles.begin(), split_doubles.end(), find_non_zero_lambda);
     REQUIRE(find_it == split_doubles.end());
+
+    // Split by iterators results in the same vector
+    auto split_doubles_by_it = stations::split(doubles.begin(), doubles.end(), 2 /*PARTS*/);
+    REQUIRE(split_doubles_by_it.size() == 2);
+    find_it = std::find_if(split_doubles_by_it.begin(), split_doubles_by_it.end(), find_non_zero_lambda);
+    REQUIRE(find_it == split_doubles_by_it.end());
   }
 
   SECTION("322 parts")
@@ -33,6 +44,12 @@ TEST_CASE("Split an empty vector")
     REQUIRE(split_doubles.size() == 322);
     auto find_it = std::find_if(split_doubles.begin(), split_doubles.end(), find_non_zero_lambda);
     REQUIRE(find_it == split_doubles.end());
+
+    // Split by iterators results in the same vector
+    auto split_doubles_by_it = stations::split(doubles.begin(), doubles.end(), 322 /*PARTS*/);
+    REQUIRE(split_doubles_by_it.size() == 322);
+    find_it = std::find_if(split_doubles_by_it.begin(), split_doubles_by_it.end(), find_non_zero_lambda);
+    REQUIRE(find_it == split_doubles_by_it.end());
   }
 }
 
@@ -63,6 +80,14 @@ TEST_CASE("Split some vector")
     REQUIRE(split_ints[0]->size() == 4); // The first one should be the largest one (because that one will be run first)
     REQUIRE(split_ints[1]->size() == 3);
     REQUIRE(split_ints[2]->size() == 3);
+
+    // Split by iterators results in the same list
+    ints = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    auto split_ints_by_it = stations::split(ints.begin(), ints.end(), 3 /*PARTS*/);
+    REQUIRE(split_ints_by_it.size() == 3);
+    REQUIRE(split_ints_by_it[0]->size() == 4); // The first one should be the largest one (because that one will be run first)
+    REQUIRE(split_ints_by_it[1]->size() == 3);
+    REQUIRE(split_ints_by_it[2]->size() == 3);
   }
 
   SECTION("Ten parts")
