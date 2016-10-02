@@ -34,8 +34,7 @@ split(TContainer & container, std::size_t const PARTS)
 }
 
 
-template <typename BidirectionalIterator>
-inline
+template <typename BidirectionalIterator> inline
 std::vector<std::shared_ptr<std::vector<typename BidirectionalIterator::value_type> > >
 split(BidirectionalIterator first, BidirectionalIterator last, std::size_t const PARTS)
 {

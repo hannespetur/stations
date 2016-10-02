@@ -18,18 +18,18 @@ main(int argc, char ** argv)
 {
   srand(42);  // Seed is 42
 
-  if (argc != 3)
+  if (argc != 2)
   {
-    std::cerr << "Usage: " << argv[0] << " <NUM_INTS> <NUM_THREADS>" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " <NUM_INTS>" << std::endl;
     std::exit(1);
   }
 
   int const num_ints = std::stoi(argv[1]);
-  int const num_threads = std::stoi(argv[2]);
+  // std::size_t num_threads = std::stoi(argv[2]);
 
   std::vector<int> ints = stations_internal::get_random_ints<std::vector<int> >(num_ints);
   auto start = std::chrono::system_clock::now();
-  stations::sort(num_threads, ints.begin(), ints.end());
+  stations::sort(ints.begin(), ints.end());
   auto end = std::chrono::system_clock::now();
   std::chrono::duration<double> diff = end - start;
   std::cout << "Total number of ints sorted are " << ints.size() << std::endl;
