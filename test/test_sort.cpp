@@ -20,7 +20,7 @@ check_empty_ints()
 {
   T ints;
   REQUIRE(ints.size() == 0);
-  stations::sort(8, ints.begin(), ints.end());
+  stations::sort(ints.begin(), ints.end());
   REQUIRE(ints.size() == 0);
 }
 
@@ -48,7 +48,7 @@ check_small_ints()
  T ints = stations_internal::get_random_ints<T>(1);
  REQUIRE(ints.size() == 1);
  REQUIRE(std::is_sorted(ints.begin(), ints.end()));
- stations::sort(8, ints.begin(), ints.end());
+ stations::sort(ints.begin(), ints.end());
  REQUIRE(ints.size() == 1);
  REQUIRE(std::is_sorted(ints.begin(), ints.end()));
 }
@@ -83,7 +83,7 @@ check_simple_floats()
 
   REQUIRE(floats.size() == 7);
   REQUIRE(!std::is_sorted(floats.begin(), floats.end()));
-  stations::sort(8, floats.begin(), floats.end());
+  stations::sort(floats.begin(), floats.end());
   REQUIRE(std::is_sorted(floats.begin(), floats.end()));
 
   // Iterator over both the array and the container
@@ -123,7 +123,7 @@ check_large_ints()
   T ints = stations_internal::get_random_ints<T>(N);
   REQUIRE(ints.size() == N);
   REQUIRE(!std::is_sorted(ints.begin(), ints.end())); // Well, at least it is extremely unlikely to be sorted :)
-  stations::sort(8, ints.begin(), ints.end());
+  stations::sort(ints.begin(), ints.end());
   REQUIRE(ints.size() == N);
   REQUIRE(std::is_sorted(ints.begin(), ints.end()));
 }
