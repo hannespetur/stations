@@ -61,7 +61,7 @@ check_int_count_case2()
 {
   T ints = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
   ints.resize(10000000, 0); // 10000000 - 10 = 9999990 zeros total
-  REQUIRE(stations::count(ints.begin(), ints.end(), 0) == 9999990);
+  REQUIRE(stations::count(ints.begin(), ints.end(), 0u) == 9999990);
 }
 
 
