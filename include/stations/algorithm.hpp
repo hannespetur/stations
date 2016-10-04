@@ -15,23 +15,22 @@ namespace stations
 {
 
 template<typename InputIt, typename T>
-typename std::iterator_traits<InputIt>::difference_type
+T
 count(InputIt first, InputIt last, T const & value)
 {
-  using TReturn = typename std::iterator_traits<InputIt>::difference_type;
-
   std::size_t num_threads = std::thread::hardware_concurrency();
   std::vector<InputIt> split_iterators = stations::split_iterators(first, last, num_threads);
-  std::vector<std::shared_ptr<TReturn> > counts;
+  std::vector<std::shared_ptr<T> > counts;
 
+  // Parallel region
   {
     stations::Station count_station(num_threads, 1);
 
     for (std::size_t i = 0; i < num_threads; ++i)
     {
-      counts.push_back(std::make_shared<TReturn>(0));
+      counts.push_back(std::make_shared<T>(0));
       count_station.add_to_thread(i /*thread_id*/,
-                                 [value](InputIt first, InputIt last, std::shared_ptr<TReturn> ret)
+                                 [value](InputIt first, InputIt last, std::shared_ptr<T> ret)
                                  {
                                    *ret = std::count(first, last, value);
                                  } /*function*/,
@@ -42,12 +41,77 @@ count(InputIt first, InputIt last, T const & value)
     }
   }
 
-  TReturn sum = 0;
+  // Merge region
+  T sum = 0;
 
   for (auto const & count : counts)
     sum += *count;
 
   return sum;
+}
+
+
+template<typename InputIt, typename UnaryPredicate>
+typename std::iterator_traits<InputIt>::difference_type
+count_if(InputIt first, InputIt last, UnaryPredicate p)
+{
+  using T = typename std::iterator_traits<InputIt>::difference_type;
+
+  std::size_t num_threads = std::thread::hardware_concurrency();
+  std::vector<InputIt> split_iterators = stations::split_iterators(first, last, num_threads);
+  std::vector<std::shared_ptr<T> > counts;
+
+  // Parallel region
+  {
+    stations::Station count_if_station(num_threads, 1);
+
+    for (std::size_t i = 0; i < num_threads; ++i)
+    {
+      counts.push_back(std::make_shared<T>(0));
+      count_if_station.add_to_thread(i /*thread_id*/,
+                                     [p](InputIt first, InputIt last, std::shared_ptr<T> ret)
+                                     {
+                                       *ret = std::count_if(first, last, p);
+                                     } /*function*/,
+                                     split_iterators[i], /*first*/
+                                     split_iterators[i+1], /*last*/
+                                     counts.back()
+                                     );
+    }
+  }
+
+  // Merge region
+  T sum = 0;
+
+  for (auto const & count : counts)
+    sum += *count;
+
+  return sum;
+}
+
+
+template<typename InputIt, typename UnaryFunction>
+UnaryFunction
+for_each(InputIt first, InputIt last, UnaryFunction f)
+{
+  std::size_t num_threads = std::thread::hardware_concurrency();
+
+  // Parallel region
+  {
+    stations::Station for_each_station(num_threads, 1);
+
+    while (first != last)
+    {
+      for_each_station.add([f](InputIt it)
+                           {
+                             f(*it);
+                           } /*function*/,
+                           first++ /*it*/
+                           );
+    }
+  }
+
+  return f;
 }
 
 

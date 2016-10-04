@@ -3,7 +3,9 @@ project (stations CXX)
 
 set(stations_test_files
   test.cpp
+  test_count_if.cpp
   test_count.cpp
+  test_for_each.cpp
   test_internal.cpp
   test_sort.cpp
   test_split.cpp
