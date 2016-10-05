@@ -3,10 +3,13 @@ project (stations CXX)
 
 set(stations_test_files
   test.cpp
+  test_all_of.cpp
+  test_any_of.cpp
   test_count_if.cpp
   test_count.cpp
   test_for_each.cpp
   test_internal.cpp
+  test_none_of.cpp
   test_sort.cpp
   test_split.cpp
   test_split_iterator.cpp

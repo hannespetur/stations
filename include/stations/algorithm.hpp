@@ -14,6 +14,75 @@
 namespace stations
 {
 
+
+template<typename InputIt, typename UnaryPredicate>
+bool
+all_of(InputIt first, InputIt last, UnaryPredicate f)
+{
+  std::size_t num_threads = std::thread::hardware_concurrency();
+  std::vector<InputIt> split_iterators = stations::split_iterators(first, last, num_threads);
+  std::vector<std::shared_ptr<bool> > returns;
+
+  // Parallel region
+  {
+    stations::Station all_of_station(num_threads, 1);
+
+    for (std::size_t i = 0; i < num_threads; ++i)
+    {
+      returns.push_back(std::make_shared<bool>(false));
+      all_of_station.add([f](InputIt first, InputIt last, std::shared_ptr<bool> ret)
+                         {
+                           *ret = std::all_of(first, last, f);
+                         } /*function*/,
+                         split_iterators[i], /*first*/
+                         split_iterators[i+1], /*last*/
+                         returns.back()
+                         );
+    }
+  }
+
+  return std::all_of(returns.begin(), returns.end(), [](std::shared_ptr<bool> b){return *b == true;});
+}
+
+
+template<typename InputIt, typename UnaryPredicate>
+bool
+any_of(InputIt first, InputIt last, UnaryPredicate f)
+{
+  std::size_t num_threads = std::thread::hardware_concurrency();
+  std::vector<InputIt> split_iterators = stations::split_iterators(first, last, num_threads);
+  std::vector<std::shared_ptr<bool> > returns;
+
+  // Parallel region
+  {
+    stations::Station any_of_station(num_threads, 1);
+
+    for (std::size_t i = 0; i < num_threads; ++i)
+    {
+      returns.push_back(std::make_shared<bool>(false));
+      any_of_station.add([f](InputIt first, InputIt last, std::shared_ptr<bool> ret)
+                         {
+                           *ret = std::any_of(first, last, f);
+                         } /*function*/,
+                         split_iterators[i], /*first*/
+                         split_iterators[i+1], /*last*/
+                         returns.back()
+                         );
+    }
+  }
+
+  return std::any_of(returns.begin(), returns.end(), [](std::shared_ptr<bool> b){return *b == true;});
+}
+
+
+template<typename InputIt, typename UnaryPredicate>
+bool
+none_of(InputIt first, InputIt last, UnaryPredicate f)
+{
+  return !stations::any_of(first, last, f);
+}
+
+
 template<typename InputIt, typename T>
 T
 count(InputIt first, InputIt last, T const & value)
