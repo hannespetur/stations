@@ -75,14 +75,6 @@ any_of(InputIt first, InputIt last, UnaryPredicate f)
 }
 
 
-template<typename InputIt, typename UnaryPredicate>
-bool
-none_of(InputIt first, InputIt last, UnaryPredicate f)
-{
-  return !stations::any_of(first, last, f);
-}
-
-
 template<typename InputIt, typename T>
 T
 count(InputIt first, InputIt last, T const & value)
@@ -159,6 +151,33 @@ count_if(InputIt first, InputIt last, UnaryPredicate p)
 }
 
 
+template<typename InputIt, typename T>
+void
+fill(InputIt first, InputIt last, T const & value)
+{
+  std::size_t num_threads = std::thread::hardware_concurrency();
+  std::vector<InputIt> split_iterators = stations::split_iterators(first, last, num_threads);
+  std::vector<std::shared_ptr<T> > counts;
+
+  // Parallel region
+  {
+    stations::Station fill_station(num_threads, 1);
+
+    for (std::size_t i = 0; i < num_threads; ++i)
+    {
+      fill_station.add_to_thread(i /*thread_id*/,
+                                [value](InputIt first, InputIt last)
+                                {
+                                  std::fill(first, last, value);
+                                } /*function*/,
+                                split_iterators[i], /*first*/
+                                split_iterators[i+1] /*last*/
+                                );
+    }
+  }
+}
+
+
 template<typename InputIt, typename UnaryFunction>
 UnaryFunction
 for_each(InputIt first, InputIt last, UnaryFunction f)
@@ -181,6 +200,14 @@ for_each(InputIt first, InputIt last, UnaryFunction f)
   }
 
   return f;
+}
+
+
+template<typename InputIt, typename UnaryPredicate>
+bool
+none_of(InputIt first, InputIt last, UnaryPredicate f)
+{
+  return !stations::any_of(first, last, f);
 }
 
 
