@@ -7,6 +7,7 @@ set(stations_test_files
   test_any_of.cpp
   test_count_if.cpp
   test_count.cpp
+  test_fill.cpp
   test_for_each.cpp
   test_internal.cpp
   test_none_of.cpp
