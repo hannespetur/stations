@@ -15,7 +15,7 @@ void
 check_empty_ints()
 {
   T ints;
-  REQUIRE(stations::all_of(ints.begin(), ints.end(), [](int i){return i == 999999;}) == true); // Returns true if the range is empty
+  REQUIRE(std::all_of(ints.begin(), ints.end(), [](int i){return i == 999999;}) == true); // Returns true if the range is empty
 }
 
 TEST_CASE("Running all_of with empty containers")
@@ -33,7 +33,7 @@ void
 check_for_all_with_a_non_empty_container_false()
 {
   T ints = {1, 2, 3, 6, 4, 1, 2, 5, 2, 10};
-  stations::all_of(ints.begin(), ints.end(), [](int i){return i < 10;}) == false;
+  REQUIRE(stations::all_of(ints.begin(), ints.end(), [](int i){return i < 10;}) == false);
 }
 
 
@@ -42,7 +42,7 @@ void
 check_for_all_with_a_non_empty_container_true()
 {
   T ints = {1, 2, 3, 6, 4, 1, 2, 5, 2, 10};
-  stations::all_of(ints.begin(), ints.end(), [](int i){return i <= 10;}) == true;
+  REQUIRE(stations::all_of(ints.begin(), ints.end(), [](int i){return i <= 10;}) == true);
 }
 
 

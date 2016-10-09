@@ -11,9 +11,9 @@ set(stations_test_files
   test_for_each.cpp
   test_internal.cpp
   test_none_of.cpp
+  test_partition_iterator.cpp
   test_sort.cpp
   test_split.cpp
-  test_split_iterator.cpp
 )
 
 # Include "Catch" library

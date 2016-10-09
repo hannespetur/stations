@@ -30,11 +30,11 @@ TEST_CASE("Sorting empty containers")
   SECTION("Empty vector of integers")
     check_empty_ints<std::vector<int> >();
 
-  SECTION("Empty list of integers")
-    check_empty_ints<std::list<int> >();
-
-  SECTION("Empty deque of integers")
-    check_empty_ints<std::deque<int> >();
+  // SECTION("Empty list of integers")
+  //   check_empty_ints<std::list<int> >();
+  //
+  // SECTION("Empty deque of integers")
+  //   check_empty_ints<std::deque<int> >();
 }
 
 
@@ -59,11 +59,11 @@ TEST_CASE("Sorting containers of size 1")
  SECTION("Large vector of integers")
    check_small_ints<std::vector<int> >();
 
- SECTION("Large list of integers")
-   check_small_ints<std::list<int> >();
-
- SECTION("Large deque of integers")
-   check_small_ints<std::deque<int> >();
+ // SECTION("Large list of integers")
+ //   check_small_ints<std::list<int> >();
+ //
+ // SECTION("Large deque of integers")
+ //   check_small_ints<std::deque<int> >();
 }
 
 
@@ -104,11 +104,11 @@ TEST_CASE("Sorting simple container")
   SECTION("Simple vector of integers")
     check_simple_floats<std::vector<float> >();
 
-  SECTION("Simple list of integers")
-    check_simple_floats<std::list<float> >();
-
-  SECTION("Simple deque of integers")
-    check_simple_floats<std::deque<float> >();
+  // SECTION("Simple list of integers")
+  //   check_simple_floats<std::list<float> >();
+  //
+  // SECTION("Simple deque of integers")
+  //   check_simple_floats<std::deque<float> >();
 }
 
 
@@ -134,9 +134,9 @@ TEST_CASE("Sorting large containers")
   SECTION("Large vector of integers")
     check_large_ints<std::vector<int> >();
 
-  SECTION("Large list of integers")
-    check_large_ints<std::list<int> >();
-
-  SECTION("Large deque of integers")
-    check_large_ints<std::deque<int> >();
+  // SECTION("Large list of integers")
+  //   check_large_ints<std::list<int> >();
+  //
+  // SECTION("Large deque of integers")
+  //   check_large_ints<std::deque<int> >();
 }

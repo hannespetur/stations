@@ -5,7 +5,7 @@
 #include <list> // std::list
 #include <vector> // std::vector
 
-#include <stations/split_iterator.hpp>
+#include <stations/partition_iterator.hpp>
 
 
 TEST_CASE("Get split iterators for an empty vector")
@@ -14,15 +14,17 @@ TEST_CASE("Get split iterators for an empty vector")
 
   SECTION("One part")
   {
-    std::vector<std::vector<double>::iterator> split_iters = stations::split_iterators(doubles.begin(), doubles.end(), 1 /*PARTS*/);
+    std::vector<std::vector<double>::iterator> split_iters = stations::get_partition_iterators(doubles.begin(), doubles.end(), 1 /*PARTS*/);
     REQUIRE(split_iters.size() == 2);
     REQUIRE(split_iters[0] == doubles.begin());
-    REQUIRE(split_iters[1] == doubles.begin()); // Note: Here, doubles.begin() == doubles.end().
+    REQUIRE(split_iters[1] == doubles.begin());
+    REQUIRE(split_iters[0] == doubles.end());
+    REQUIRE(split_iters[1] == doubles.end());
   }
 
   SECTION("Two parts")
   {
-    std::vector<std::vector<double>::iterator> split_iters = stations::split_iterators(doubles.begin(), doubles.end(), 2 /*PARTS*/);
+    std::vector<std::vector<double>::iterator> split_iters = stations::get_partition_iterators(doubles.begin(), doubles.end(), 2 /*PARTS*/);
     REQUIRE(split_iters.size() == 3);
     REQUIRE(split_iters[0] == doubles.begin());
     REQUIRE(split_iters[1] == doubles.begin());
@@ -37,7 +39,7 @@ TEST_CASE("Get split iterators for some vector")
 
   SECTION("One part")
   {
-    std::vector<std::vector<int>::iterator> split_iters = stations::split_iterators(ints.begin(), ints.end(), 1 /*PARTS*/);
+    std::vector<std::vector<int>::iterator> split_iters = stations::get_partition_iterators(ints.begin(), ints.end(), 1 /*PARTS*/);
     REQUIRE(split_iters.size() == 2);
     REQUIRE(split_iters[0] == ints.begin());
     REQUIRE(split_iters[1] == ints.begin() + 10);
@@ -46,7 +48,7 @@ TEST_CASE("Get split iterators for some vector")
 
   SECTION("Two parts")
   {
-    std::vector<std::vector<int>::iterator> split_iters = stations::split_iterators(ints.begin(), ints.end(), 2 /*PARTS*/);
+    std::vector<std::vector<int>::iterator> split_iters = stations::get_partition_iterators(ints.begin(), ints.end(), 2 /*PARTS*/);
     REQUIRE(split_iters.size() == 3);
     REQUIRE(split_iters[0] == ints.begin());
     REQUIRE(split_iters[1] == ints.begin() + 5);
@@ -56,7 +58,7 @@ TEST_CASE("Get split iterators for some vector")
 
   SECTION("Three parts")
   {
-    std::vector<std::vector<int>::iterator> split_iters = stations::split_iterators(ints.begin(), ints.end(), 3 /*PARTS*/);
+    std::vector<std::vector<int>::iterator> split_iters = stations::get_partition_iterators(ints.begin(), ints.end(), 3 /*PARTS*/);
     REQUIRE(split_iters.size() == 4);
     REQUIRE(split_iters[0] == ints.begin());
     REQUIRE(split_iters[1] == ints.begin() + 4);
@@ -82,7 +84,7 @@ TEST_CASE("Get split iterators for some vector")
 
   SECTION("Ten parts")
   {
-    std::vector<std::vector<int>::iterator> split_iters = stations::split_iterators(ints.begin(), ints.end(), 10 /*PARTS*/);
+    std::vector<std::vector<int>::iterator> split_iters = stations::get_partition_iterators(ints.begin(), ints.end(), 10 /*PARTS*/);
     REQUIRE(split_iters.size() == 11);
 
     for (unsigned i = 0; i < 11; ++i)

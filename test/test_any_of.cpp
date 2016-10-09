@@ -33,7 +33,7 @@ void
 check_for_all_with_a_non_empty_container_false()
 {
   T ints = {1, 2, 3, 6, 4, 1, 2, 5, 2, 10};
-  stations::any_of(ints.begin(), ints.end(), [](int i){return i == 9;}) == false;
+  REQUIRE(stations::any_of(ints.begin(), ints.end(), [](int i){return i == 9;}) == false);
 }
 
 
@@ -42,7 +42,7 @@ void
 check_for_all_with_a_non_empty_container_true()
 {
   T ints = {1, 2, 3, 6, 4, 1, 2, 5, 2, 10};
-  stations::any_of(ints.begin(), ints.end(), [](int i){return i == 10;}) == true;
+  REQUIRE(stations::any_of(ints.begin(), ints.end(), [](int i){return i == 10;}) == true);
 }
 
 

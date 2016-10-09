@@ -68,11 +68,11 @@ int main (int argc, char** argv)
 
   {
     std::vector<std::shared_ptr<std::vector<int> > > all_primes;
-    stations::Station keep_primes_station(num_threads, 2 /*MAX_QUEUE_SIZE*/);
+    stations::Station keep_primes_station;
 
     for (auto ints = riff(); ints->size() > 0; ints = riff())
     {
-      keep_primes_station.add(keep_primes, ints);
+      keep_primes_station.add_work(keep_primes, ints);
       all_primes.push_back(ints);
     }
   }

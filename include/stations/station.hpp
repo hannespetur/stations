@@ -1,9 +1,12 @@
 #pragma once
-#include <algorithm> // std::min_element
+#include <algorithm> // std::all_of, std::min_element
 #include <iostream> // std::cout, std::endl
 #include <thread> // std::thread
 
+#include <stations/station_options.hpp> // stations::WorkerQueue
+#include <stations/partition_iterator.hpp> // stations::get_partition_iterators
 #include <stations/worker_queue.hpp> // stations::WorkerQueue
+
 
 namespace stations
 {
@@ -11,32 +14,27 @@ namespace stations
 class Station
 {
 private:
-  std::size_t const thread_count;
-  std::size_t main_thread_work_count = 0;
-  std::size_t const max_queue_size;
-  std::vector<std::thread> workers;
-  std::vector<std::unique_ptr<WorkerQueue> > queues;
+  /*********************
+  * STATION STATISTICS *
+  *********************/
   bool joined = false;
+  std::size_t main_thread_work_count = 0; /** Number of jobs the main thread has run. */
+  std::vector<std::thread> workers; /** List of threads. */
+  std::vector<std::unique_ptr<WorkerQueue> > queues; /** Each thread has a unique worker queue. */
+  StationOptions const options; /** Options and policies this station will follow */
 
 public:
-  /**
-   * Instance variables
-   */
-  bool verbose = false; // Set to true to output statistics about the thread distribution at the end of the run.
-
-  /**
-   * Class member functions
-   */
-  Station(std::size_t const _thread_count = 1, std::size_t const _max_queue_size = 2)
-    : thread_count(_thread_count)
-    , max_queue_size(_max_queue_size)
+  Station(StationOptions const & _options = StationOptions())
+    : options(_options)
   {
-    // If thread_count == 0 then thread_count == 1 is used (only boss thread will be used)
-    for (long i = 0; i < static_cast<long>(thread_count) - 1; ++i)
+    // If num_threads <= 1 only theboss thread will be used
+    if (options.num_threads > 1)
     {
-      std::unique_ptr<WorkerQueue> new_ptr(new WorkerQueue());
-      queues.push_back(std::move(new_ptr));
-      workers.push_back(std::thread(std::ref(*queues[i])));
+      for (std::size_t i = 0; i < options.num_threads - 1; ++i)
+      {
+        queues.push_back(std::unique_ptr<WorkerQueue>(new WorkerQueue()));
+        workers.push_back(std::thread(std::ref(*queues[i])));
+      }
     }
   }
 
@@ -47,45 +45,84 @@ public:
       join();
   }
 
-
+  /***************************
+  * GENERAL MEMBER FUNCTIONS *
+  ***************************/
   template <typename TWork, typename... Args>
   void inline
-  add(TWork && work, Args... args)
+  add_work(TWork && work, Args... args)
   {
-    if (thread_count > 1)
-    {
-      auto min_queue_it = std::min_element(queues.begin(),
-                                           queues.end(),
-                                           [](std::unique_ptr<WorkerQueue> const & q1, std::unique_ptr<WorkerQueue> const & q2)
-        {
-          return q1->get_number_of_items_in_queue() < q2->get_number_of_items_in_queue();
-        }
-                                           );
-
-      if ((*min_queue_it)->queue_size < max_queue_size)
-      {
-        (*min_queue_it)->add_work_to_queue(std::bind(std::forward<TWork>(work), args...));
-        return;
-      }
-    }
-
-    work(args...);
-    ++main_thread_work_count;
-  }
-
-
-  template <typename TWork, typename ... Args>
-  void inline
-  add_to_thread(std::size_t const thread_id, TWork && work, Args... args)
-  {
-    if (thread_id % thread_count == thread_count - 1)
+    // If we have any worker threads, check who has the smallest queue and if it's size is smaller than the maximum queue size
+    if (options.num_threads <= 1)
     {
       work(args...);
       ++main_thread_work_count;
+      return;
     }
-    else
+
+    // Lambda function which finds the smallest worker queue
+    auto find_smallest_queue = [this]() -> std::vector<std::unique_ptr<WorkerQueue> >::const_iterator
     {
-      queues[thread_id % thread_count]->add_work_to_queue(std::bind(std::forward<TWork>(work), args...));
+      auto smallest_q_it = this->queues.cbegin();
+      std::size_t smallest_size = -1;
+
+      for (auto q_it = this->queues.cbegin(); q_it != this->queues.cend(); ++q_it)
+      {
+        std::size_t const current_queue_size = (*q_it)->get_number_of_items_in_queue();
+
+        // Check if any queue is empty, and if that is the case we don't need to look any further
+        if (current_queue_size == 0)
+        {
+          return q_it;
+        }
+        else if (current_queue_size < smallest_size)
+        {
+          smallest_size = current_queue_size;
+          smallest_q_it = q_it;
+        }
+      }
+
+      return smallest_q_it;
+    };
+
+    switch(options.boss_thread_mode)
+    {
+      case HARD_WORKING_BOSS:
+      {
+        auto min_queue_it = find_smallest_queue();
+
+        if ((*min_queue_it)->get_number_of_items_in_queue() < options.max_queue_size)
+        {
+          (*min_queue_it)->add_work_to_queue(std::bind(std::forward<TWork>(work), args...));
+        }
+        else
+        {
+          work(args...); // If all queues are of maximum size, use the boss thread instead
+          ++main_thread_work_count;
+        }
+      }
+      break;
+
+      case PATIENT_BOSS:
+      {
+        auto min_queue_it = find_smallest_queue();
+
+        while ((*min_queue_it)->get_number_of_items_in_queue() >= options.max_queue_size)
+        {
+          std::this_thread::sleep_for(std::chrono::microseconds(100)); // 0.1 ms
+          min_queue_it = find_smallest_queue();
+        }
+
+        (*min_queue_it)->add_work_to_queue(std::bind(std::forward<TWork>(work), args...));
+      }
+      break;
+
+      case ORGANIZED_BOSS:
+      {
+        auto min_queue_it = find_smallest_queue();
+        (*min_queue_it)->add_work_to_queue(std::bind(std::forward<TWork>(work), args...));
+      }
+      break;
     }
   }
 
@@ -93,16 +130,16 @@ public:
   void inline
   join()
   {
-    if (verbose)
-      std::cout << "Main thread processed " << main_thread_work_count << " chunks." << std::endl;
+    if (options.verbosity >= 2)
+      std::cout << "[stations] Main thread processed " << main_thread_work_count << " chunks." << std::endl;
 
-    for (long i = 0; i < static_cast<long>(thread_count) - 1; ++i)
+    for (long i = 0; i < static_cast<long>(options.num_threads) - 1; ++i)
     {
       queues[i]->finished = true;
       workers[i].join();
 
-      if (verbose)
-        std::cout << "Thread " << (i + 1) << " processed " << queues[i]->get_number_of_completed_items() << " chunks." << std::endl;
+      if (options.verbosity >= 2)
+        std::cout << "[stations] Thread " << (i + 1) << " processed " << queues[i]->get_number_of_completed_items() << " chunks." << std::endl;
     }
 
     joined = true;
