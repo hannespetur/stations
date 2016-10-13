@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <iterator> // std::iterator_traits
 #include <thread> // std::thread::hardware_concurrency
 
@@ -173,7 +174,7 @@ count_if(InputIt first, InputIt last, UnaryPredicate p)
 {
   StationOptions options;
   options.chunk_size = 0; // Partition evenly
-  return count_if(std::move(options), first, last, p);
+  return stations::count_if(std::move(options), first, last, p);
 }
 
 
@@ -253,14 +254,13 @@ none_of(InputIt first, InputIt last, UnaryPredicate f)
 
 template <typename InputIt>
 void inline
-sort(InputIt first, InputIt last)
+sort(StationOptions && options, InputIt first, InputIt last)
 {
-  using TValue = typename std::iterator_traits<InputIt>::value_type;
-  using TVector = std::vector<TValue>;
-
-  StationOptions options;
+  // std::cout << "Num threads = " << options.get_num_threads() << std::endl;
   std::vector<InputIt> partition_iterators = stations::get_partition_iterators(first, last, options);
+  std::cout << "iterator size = " << partition_iterators.size() << " " << (options.boss_thread_mode == HARD_WORKING_BOSS) << std::endl;
   stations::Station sort_station(options);
+  // std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
   for (long i = 0; i < static_cast<long>(partition_iterators.size()) - 1; ++i)
   {
@@ -272,88 +272,32 @@ sort(InputIt first, InputIt last)
 
   sort_station.join(); // After this join, all partitions are sorted, then we need to merge the sorted partition
 
-  auto merge_fun = [](InputIt first, InputIt middle, InputIt last)
+  // I have tried to implement a multi-threaded merge, but actually the single threaded version always performs faster
+  for (std::size_t d = 2; d < partition_iterators.size(); ++d)
   {
-    TVector merged_vector(std::distance(first, last));
-    std::merge(first, middle, middle, last, merged_vector.begin());
-    std::move(merged_vector.begin(), merged_vector.end(), first);
-  };
+    std::inplace_merge(partition_iterators[0], partition_iterators[d - 1], partition_iterators[d]);
+  }
+}
 
-  std::size_t d = 2;
 
-  while(d <= options.get_num_threads())
+template <typename InputIt>
+void inline
+sort(InputIt first, InputIt last)
+{
+  StationOptions options;
+  std::size_t const container_size = std::distance(first, last);
+
+  if (options.get_num_threads() > 2 && container_size >= 1000 && container_size <= 10000)
   {
-    {
-      auto new_first = first;
-      while (new_first != last)
-      {
-        std::cout << *new_first << std::endl;
-        ++new_first;
-      }
-      std::cout << std::endl;
-    }
-
-    {
-      stations::Station merge_station(options);
-
-
-
-      std::size_t i;
-
-      for (i = 0; static_cast<long>(i*d) < static_cast<long>(partition_iterators.size() - d); ++i)
-      {
-        merge_station.add_work(merge_fun,
-                               partition_iterators[i*d],
-                               partition_iterators[i*d + d / 2],
-                               partition_iterators[i*d + d]
-                               );
-      }
-
-      merge_station.join();
-    }
-
-    d *= 2;
+    options.set_num_threads(2);
+  }
+  else if (options.get_num_threads() > 4 && container_size >= 10000 && container_size <= 100000)
+  {
+    options.set_num_threads(4);
   }
 
-  merge_fun(partition_iterators[0], partition_iterators[d / 2], partition_iterators.back());
-
-  // auto new_first = first;
-  //
-  // while (new_first != last)
-  // {
-  //   std::cout << *new_first << std::endl;
-  //   ++new_first;
-  // }
-  // std::cout << std::endl;
-
-  // {
-  //   std::size_t d = 2;
-  //
-  //   // Merge sort the split ints
-  //   while (split_ints.size() > 1)
-  //   {
-  //     TVector merged_ints;
-  //     auto new_split_ints = stations::split(merged_ints.begin(), merged_ints.end(), num_threads / d);
-  //
-  //     {
-  //       stations::StationOptions options;
-  //       options.set_num_threads(num_threads / d);
-  //       stations::Station merge_sort_station(options);
-  //
-  //       for (std::size_t i = 0; i < static_cast<std::size_t>(num_threads / d); ++i)
-  //         merge_sort_station.add_work(stations_internal::merge_two_sorted_vectors<TVector>, new_split_ints[i], split_ints[2 * i], split_ints[2 * i + 1]);
-  //     }
-  //
-  //     split_ints = new_split_ints;
-  //     d *= 2;
-  //   }
-  // }
-  //
-  // for (std::size_t i = 0; i < split_ints[0]->size(); ++i)
-  // {
-  //   *first = (*split_ints[0])[i];
-  //   ++first;
-  // }
+  std::cout << "Threads = " << options.get_num_threads() << std::endl;
+  stations::sort(std::move(options), first, last);
 }
 
 

@@ -119,7 +119,7 @@ template<typename T>
 void
 check_large_ints()
 {
-  std::size_t const N = 10000;
+  std::size_t const N = 1000000;
   T ints = stations_internal::get_random_ints<T>(N);
   REQUIRE(ints.size() == N);
   REQUIRE(!std::is_sorted(ints.begin(), ints.end())); // Well, at least it is extremely unlikely to be sorted :)

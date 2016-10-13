@@ -2,6 +2,7 @@
 
 #include <iterator> // std::next
 #include <vector> // std::vector
+#include <iostream>
 
 #include <stations/station_options.hpp> // stations::StationOptions
 
@@ -17,7 +18,7 @@ get_partition_iterators(BidirectionalIterator first, BidirectionalIterator last,
 
   if (options.chunk_size == 0)
   {
-    std::size_t const PARTS = options.get_num_threads();
+    std::size_t const PARTS = options.get_num_threads() - (options.get_num_threads() > 1 && options.boss_thread_mode == PATIENT_BOSS);
     partition_iterators.reserve(PARTS + 1);
     partition_iterators.push_back(first);
     std::size_t const container_original_size = std::distance(first, last);
