@@ -16,10 +16,6 @@ set(stations_test_files
   test_split.cpp
 )
 
-# Include "Catch" library
-include_directories(${CMAKE_SOURCE_DIR}/include)
-include_directories(${CMAKE_SOURCE_DIR}/catch/single_include)
-
 add_executable(test_stations ${stations_test_files})
 
 # Link to threading library (pthreads on linux)

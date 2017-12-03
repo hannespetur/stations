@@ -6,6 +6,8 @@
 #include <list> // std::list
 #include <vector> // std::vector
 
+#include <parallel/algorithm>
+
 #include <stations/internal/data_simulation.hpp> // stations_internal::get_random_ints
 
 #include <stations/algorithm.hpp> // stations::sort
@@ -123,7 +125,12 @@ check_large_ints()
   T ints = stations_internal::get_random_ints<T>(N);
   REQUIRE(ints.size() == N);
   REQUIRE(!std::is_sorted(ints.begin(), ints.end())); // Well, at least it is extremely unlikely to be sorted :)
+  auto start = std::chrono::system_clock::now();
   stations::sort(ints.begin(), ints.end());
+  // std::sort(ints.begin(), ints.end());
+  auto end = std::chrono::system_clock::now();
+  std::cout << "total: " << static_cast<std::chrono::duration<double> >(end - start).count() << std::endl;
+  // stations::sort(ints.begin(), ints.end());
   REQUIRE(ints.size() == N);
   REQUIRE(std::is_sorted(ints.begin(), ints.end()));
 }

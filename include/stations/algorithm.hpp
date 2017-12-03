@@ -149,7 +149,11 @@ count_if(StationOptions && options, InputIt first, InputIt last, UnaryPredicate 
     counts.push_back(std::make_shared<T>(0));
     count_if_station.add_work([p](InputIt first, InputIt last, std::shared_ptr<T> ret)
                               {
+#ifdef D_GLIBCXX_PARALLEL
+                                *ret = std::count_if(first, last, p, __gnu_parallel::sequential_tag()); //
+#else
                                 *ret = std::count_if(first, last, p);
+#endif
                               } /*function*/,
                               partition_iterators[i], /*first*/
                               partition_iterators[i+1], /*last*/
@@ -172,9 +176,7 @@ template<typename InputIt, typename UnaryPredicate>
 typename std::iterator_traits<InputIt>::difference_type inline
 count_if(InputIt first, InputIt last, UnaryPredicate p)
 {
-  StationOptions options;
-  options.chunk_size = 0; // Partition evenly
-  return stations::count_if(std::move(options), first, last, p);
+  return stations::count_if(StationOptions(), first, last, p);
 }
 
 
@@ -258,7 +260,7 @@ sort(StationOptions && options, InputIt first, InputIt last)
 {
   // std::cout << "Num threads = " << options.get_num_threads() << std::endl;
   std::vector<InputIt> partition_iterators = stations::get_partition_iterators(first, last, options);
-  std::cout << "iterator size = " << partition_iterators.size() << " " << (options.boss_thread_mode == HARD_WORKING_BOSS) << std::endl;
+  // std::cout << "iterator size = " << partition_iterators.size() << " " << (options.boss_thread_mode == HARD_WORKING_BOSS) << std::endl;
   stations::Station sort_station(options);
   // std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
@@ -271,6 +273,8 @@ sort(StationOptions && options, InputIt first, InputIt last)
   }
 
   sort_station.join(); // After this join, all partitions are sorted, then we need to merge the sorted partition
+  // std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+  // std::cout << "sorting: " << static_cast<std::chrono::duration<double> >(t2 - t1).count() << std::endl;
 
   // I have tried to implement a multi-threaded merge, but actually the single threaded version always performs faster
   for (std::size_t d = 2; d < partition_iterators.size(); ++d)
@@ -296,7 +300,7 @@ sort(InputIt first, InputIt last)
     options.set_num_threads(4);
   }
 
-  std::cout << "Threads = " << options.get_num_threads() << std::endl;
+  // std::cout << "Threads = " << options.get_num_threads() << std::endl;
   stations::sort(std::move(options), first, last);
 }
 

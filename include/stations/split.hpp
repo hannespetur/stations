@@ -4,6 +4,7 @@
 #include <memory> // std::shared_ptr
 #include <vector> // std::vector
 
+#include <stations/station_options.hpp>
 
 namespace stations
 {
@@ -36,9 +37,10 @@ split(TContainer & container, std::size_t const PARTS)
 
 template <typename BidirectionalIterator> inline
 std::vector<std::shared_ptr<std::vector<typename BidirectionalIterator::value_type> > >
-split(BidirectionalIterator first, BidirectionalIterator last, std::size_t const PARTS)
+split(BidirectionalIterator first, BidirectionalIterator last, StationOptions const & options)
 {
   using TContainer = std::vector<typename BidirectionalIterator::value_type>;
+  std::size_t const PARTS = options.get_num_threads();
   std::vector<std::shared_ptr<TContainer> > split_container;
   split_container.resize(PARTS);
   std::size_t const container_original_size = std::distance(first, last);
@@ -55,6 +57,16 @@ split(BidirectionalIterator first, BidirectionalIterator last, std::size_t const
   }
 
   return split_container;
+}
+
+
+template <typename BidirectionalIterator> inline
+std::vector<std::shared_ptr<std::vector<typename BidirectionalIterator::value_type> > >
+split(BidirectionalIterator first, BidirectionalIterator last, std::size_t const PARTS)
+{
+  StationOptions options;
+  options.set_num_threads(PARTS);
+  return split(first, last, options);
 }
 
 
