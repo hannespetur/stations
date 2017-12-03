@@ -21,108 +21,94 @@ private:
   std::size_t main_thread_work_count = 0; /** Number of jobs the main thread has run. */
   std::vector<std::thread> workers; /** List of threads. */
   std::vector<std::unique_ptr<WorkerQueue> > queues; /** Each thread has a unique worker queue. */
-  StationOptions const options; /** Options and policies this station will follow */
+  StationOptions options; /** Options and policies this station will follow */
 
 public:
-  Station(StationOptions const & _options = StationOptions())
-    : options(_options)
-  {
-    // If num_threads <= 1 only theboss thread will be used
-    if (options.num_threads > 1)
-    {
-      for (std::size_t i = 0; i < options.num_threads - 1; ++i)
-      {
-        queues.push_back(std::unique_ptr<WorkerQueue>(new WorkerQueue()));
-        workers.push_back(std::thread(std::ref(*queues[i])));
-      }
-    }
-  }
-
-
-  ~Station()
-  {
-    if (not joined)
-      join();
-  }
+  Station(StationOptions _options);
+  Station(std::size_t const num_threads = 1, std::size_t const max_queue_size = 2);
+  ~Station();
 
   /***************************
   * GENERAL MEMBER FUNCTIONS *
   ***************************/
-  template <typename TWork, typename... Args>
+  template <typename TWork, typename ... Args>
   void inline
-  add_work(TWork && work, Args... args)
+  add_work(TWork && work, Args ... args)
   {
     // If we have any worker threads, check who has the smallest queue and if it's size is smaller than the maximum queue size
     if (options.num_threads <= 1)
     {
-      work(args...);
+      work(args ...);
       ++main_thread_work_count;
       return;
     }
 
     // Lambda function which finds the smallest worker queue
-    auto find_smallest_queue = [this]() -> std::vector<std::unique_ptr<WorkerQueue> >::const_iterator
+    auto find_smallest_queue =
+      [this]() -> std::vector<std::unique_ptr<WorkerQueue> >::const_iterator
+      {
+        auto smallest_q_it = this->queues.cbegin();
+        std::size_t smallest_size = -1;
+
+        for (auto q_it = this->queues.cbegin();
+             q_it != this->queues.cend(); ++q_it)
+        {
+          std::size_t const current_queue_size =
+            (*q_it)->get_number_of_items_in_queue();
+
+          // Check if any queue is empty, and if that is the case we don't need to look any further
+          if (current_queue_size == 0)
+          {
+            return q_it;
+          }
+          else if (current_queue_size < smallest_size)
+          {
+            smallest_size = current_queue_size;
+            smallest_q_it = q_it;
+          }
+        }
+
+        return smallest_q_it;
+      };
+
+    switch (options.boss_thread_mode)
     {
-      auto smallest_q_it = this->queues.cbegin();
-      std::size_t smallest_size = -1;
-
-      for (auto q_it = this->queues.cbegin(); q_it != this->queues.cend(); ++q_it)
-      {
-        std::size_t const current_queue_size = (*q_it)->get_number_of_items_in_queue();
-
-        // Check if any queue is empty, and if that is the case we don't need to look any further
-        if (current_queue_size == 0)
-        {
-          return q_it;
-        }
-        else if (current_queue_size < smallest_size)
-        {
-          smallest_size = current_queue_size;
-          smallest_q_it = q_it;
-        }
-      }
-
-      return smallest_q_it;
-    };
-
-    switch(options.boss_thread_mode)
+    case HARD_WORKING_BOSS:
     {
-      case HARD_WORKING_BOSS:
+      auto min_queue_it = find_smallest_queue();
+
+      if ((*min_queue_it)->get_number_of_items_in_queue() < options.max_queue_size)
       {
-        auto min_queue_it = find_smallest_queue();
-
-        if ((*min_queue_it)->get_number_of_items_in_queue() < options.max_queue_size)
-        {
-          (*min_queue_it)->add_work_to_queue(std::bind(std::forward<TWork>(work), args...));
-        }
-        else
-        {
-          work(args...); // If all queues are of maximum size, use the boss thread instead
-          ++main_thread_work_count;
-        }
+        (*min_queue_it)->add_work_to_queue(std::bind(std::forward<TWork>(work), args ...));
       }
-      break;
-
-      case PATIENT_BOSS:
+      else
       {
-        auto min_queue_it = find_smallest_queue();
-
-        while ((*min_queue_it)->get_number_of_items_in_queue() >= options.max_queue_size)
-        {
-          std::this_thread::sleep_for(std::chrono::microseconds(100)); // 0.1 ms
-          min_queue_it = find_smallest_queue();
-        }
-
-        (*min_queue_it)->add_work_to_queue(std::bind(std::forward<TWork>(work), args...));
+        work(args ...);  // If all queues are of maximum size, use the boss thread instead
+        ++main_thread_work_count;
       }
-      break;
+    }
+    break;
 
-      case ORGANIZED_BOSS:
+    case PATIENT_BOSS:
+    {
+      auto min_queue_it = find_smallest_queue();
+
+      while ((*min_queue_it)->get_number_of_items_in_queue() >= options.max_queue_size)
       {
-        auto min_queue_it = find_smallest_queue();
-        (*min_queue_it)->add_work_to_queue(std::bind(std::forward<TWork>(work), args...));
+        std::this_thread::sleep_for(std::chrono::microseconds(10));   // 0.01 ms
+        min_queue_it = find_smallest_queue();
       }
-      break;
+
+      (*min_queue_it)->add_work_to_queue(std::bind(std::forward<TWork>(work), args ...));
+    }
+    break;
+
+    case ORGANIZED_BOSS:
+    {
+      auto min_queue_it = find_smallest_queue();
+      (*min_queue_it)->add_work_to_queue(std::bind(std::forward<TWork>(work), args ...));
+    }
+    break;
     }
   }
 
@@ -131,7 +117,8 @@ public:
   join()
   {
     if (options.verbosity >= 2)
-      std::cout << "[stations] Main thread processed " << main_thread_work_count << " chunks." << std::endl;
+      std::cout << "[stations] Main thread processed " << main_thread_work_count << " chunks." <<
+        std::endl;
 
     for (long i = 0; i < static_cast<long>(options.num_threads) - 1; ++i)
     {
@@ -139,11 +126,57 @@ public:
       workers[i].join();
 
       if (options.verbosity >= 2)
-        std::cout << "[stations] Thread " << (i + 1) << " processed " << queues[i]->get_number_of_completed_items() << " chunks." << std::endl;
+        std::cout << "[stations] Thread " << (i + 1) << " processed " <<
+          queues[i]->get_number_of_completed_items() << " chunks." << std::endl;
     }
 
     joined = true;
   }
+
+
+  /***************************
+  * PRIVATE MEMBER FUNCTIONS *
+  ****************************/
+private:
+  void inline
+  resize_queues_and_workers(std::size_t const new_size)
+  {
+    for (std::size_t i = 0; i < new_size; ++i)
+    {
+      queues.push_back(std::unique_ptr<WorkerQueue>(new WorkerQueue()));
+      workers.push_back(std::thread(std::ref(*queues[i])));
+    }
+  }
+
+
 };
+
+
+/* IMPLEMENTATION */
+
+inline
+Station::Station(StationOptions _options)
+  : options(_options)
+{
+  resize_queues_and_workers(options.num_threads - 1);
+}
+
+
+inline
+Station::Station(std::size_t const num_threads, std::size_t const max_queue_size)
+{
+  options.num_threads = num_threads;
+  options.max_queue_size = max_queue_size;
+  resize_queues_and_workers(options.num_threads - 1);
+}
+
+
+inline
+Station::~Station()
+{
+  if (not joined)
+    join();
+}
+
 
 } // namespace stations
