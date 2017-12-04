@@ -25,8 +25,13 @@ main()
 
   // Benchmark starts here
   auto t1 = std::chrono::system_clock::now();
-  // std::size_t const COUNT = stations::count_if(std::move(options), ints.begin(), ints.end(), [](int n){return is_prime(std::abs(n));});
-  std::size_t const COUNT = stations::count_if(std::move(options), ints.begin(), ints.end(), [](int n){return n < 0;});
+  std::size_t const COUNT =
+    stations::count_if(std::move(options), ints.begin(), ints.end(), [](int n){
+    return n < 0;
+  });
+
   auto t2 = std::chrono::system_clock::now();
-  std::cout << "Total: " << static_cast<std::chrono::duration<double> >(t2 - t1).count() << " with count " << COUNT << std::endl;
+
+  std::cout << "Total: " << static_cast<std::chrono::duration<double> >(t2 - t1).count()
+            << " with count " << COUNT << "\n";
 }

@@ -16,13 +16,14 @@
 namespace stations
 {
 
-template<typename InputIt, typename UnaryPredicate>
+template <typename InputIt, typename UnaryPredicate>
 bool inline
 all_of(StationOptions && options, InputIt first, InputIt last, UnaryPredicate f)
 {
   std::atomic<bool> false_found{false}; // Needs to be atomic for thread safety
   stations::Station all_of_station(options);
-  std::vector<InputIt> partition_iterators = stations::get_partition_iterators(first, last, options);
+  std::vector<InputIt> partition_iterators =
+    stations::get_partition_iterators(first, last, options);
 
   for (long i = 0; i < static_cast<long>(partition_iterators.size()) - 1; ++i)
   {
@@ -31,12 +32,12 @@ all_of(StationOptions && options, InputIt first, InputIt last, UnaryPredicate f)
       break;
 
     all_of_station.add_work([&false_found, f](InputIt first, InputIt last)
-                            {
-                              if (!std::all_of(first, last, f))
-                                false_found = true;
-                            }, /*function*/
+      {
+        if (!std::all_of(first, last, f))
+          false_found = true;
+      },                       /*function*/
                             partition_iterators[i], /*first*/
-                            partition_iterators[i+1] /*last*/
+                            partition_iterators[i + 1] /*last*/
                             );
   }
 
@@ -45,7 +46,7 @@ all_of(StationOptions && options, InputIt first, InputIt last, UnaryPredicate f)
 }
 
 
-template<typename InputIt, typename UnaryPredicate>
+template <typename InputIt, typename UnaryPredicate>
 bool inline
 all_of(InputIt first, InputIt last, UnaryPredicate f)
 {
@@ -55,12 +56,13 @@ all_of(InputIt first, InputIt last, UnaryPredicate f)
 }
 
 
-template<typename InputIt, typename UnaryPredicate>
+template <typename InputIt, typename UnaryPredicate>
 bool inline
 any_of(StationOptions && options, InputIt first, InputIt last, UnaryPredicate f)
 {
   std::atomic<bool> true_found{false}; // Needs to be atomic for thread safety
-  std::vector<InputIt> partition_iterators = stations::get_partition_iterators(first, last, options);
+  std::vector<InputIt> partition_iterators =
+    stations::get_partition_iterators(first, last, options);
   stations::Station any_of_station(options);
 
   for (long i = 0; i < static_cast<long>(partition_iterators.size()) - 1; ++i)
@@ -69,12 +71,12 @@ any_of(StationOptions && options, InputIt first, InputIt last, UnaryPredicate f)
       break;
 
     any_of_station.add_work([&true_found, f](InputIt first, InputIt last)
-                            {
-                              if (std::any_of(first, last, f))
-                                true_found = true;
-                            } /*function*/,
+      {
+        if (std::any_of(first, last, f))
+          true_found = true;
+      } /*function*/,
                             partition_iterators[i], /*first*/
-                            partition_iterators[i+1] /*last*/
+                            partition_iterators[i + 1] /*last*/
                             );
   }
 
@@ -83,7 +85,7 @@ any_of(StationOptions && options, InputIt first, InputIt last, UnaryPredicate f)
 }
 
 
-template<typename InputIt, typename UnaryPredicate>
+template <typename InputIt, typename UnaryPredicate>
 bool inline
 any_of(InputIt first, InputIt last, UnaryPredicate f)
 {
@@ -93,11 +95,12 @@ any_of(InputIt first, InputIt last, UnaryPredicate f)
 }
 
 
-template<typename InputIt, typename T>
+template <typename InputIt, typename T>
 T inline
 count(StationOptions && options, InputIt first, InputIt last, T const & value)
 {
-  std::vector<InputIt> partition_iterators = stations::get_partition_iterators(first, last, options);
+  std::vector<InputIt> partition_iterators =
+    stations::get_partition_iterators(first, last, options);
   std::vector<std::shared_ptr<T> > counts;
   stations::Station count_station(options);
 
@@ -105,11 +108,11 @@ count(StationOptions && options, InputIt first, InputIt last, T const & value)
   {
     counts.push_back(std::make_shared<T>(0));
     count_station.add_work([value](InputIt first, InputIt last, std::shared_ptr<T> ret)
-                           {
-                             *ret = std::count(first, last, value);
-                           } /*function*/,
+      {
+        *ret = std::count(first, last, value);
+      } /*function*/,
                            partition_iterators[i], /*first*/
-                           partition_iterators[i+1], /*last*/
+                           partition_iterators[i + 1], /*last*/
                            counts.back()
                            );
   }
@@ -125,7 +128,7 @@ count(StationOptions && options, InputIt first, InputIt last, T const & value)
 }
 
 
-template<typename InputIt, typename T>
+template <typename InputIt, typename T>
 T inline
 count(InputIt first, InputIt last, T const & value)
 {
@@ -135,12 +138,13 @@ count(InputIt first, InputIt last, T const & value)
 }
 
 
-template<typename InputIt, typename UnaryPredicate>
+template <typename InputIt, typename UnaryPredicate>
 typename std::iterator_traits<InputIt>::difference_type inline
 count_if(StationOptions && options, InputIt first, InputIt last, UnaryPredicate p)
 {
   using T = typename std::iterator_traits<InputIt>::difference_type;
-  std::vector<InputIt> partition_iterators = stations::get_partition_iterators(first, last, options);
+  std::vector<InputIt> partition_iterators =
+    stations::get_partition_iterators(first, last, options);
   std::vector<std::shared_ptr<T> > counts;
   stations::Station count_if_station(options);
 
@@ -148,15 +152,15 @@ count_if(StationOptions && options, InputIt first, InputIt last, UnaryPredicate 
   {
     counts.push_back(std::make_shared<T>(0));
     count_if_station.add_work([p](InputIt first, InputIt last, std::shared_ptr<T> ret)
-                              {
+      {
 #ifdef D_GLIBCXX_PARALLEL
-                                *ret = std::count_if(first, last, p, __gnu_parallel::sequential_tag()); //
+        *ret = std::count_if(first, last, p, __gnu_parallel::sequential_tag());                         //
 #else
-                                *ret = std::count_if(first, last, p);
+        *ret = std::count_if(first, last, p);
 #endif
-                              } /*function*/,
+      } /*function*/,
                               partition_iterators[i], /*first*/
-                              partition_iterators[i+1], /*last*/
+                              partition_iterators[i + 1], /*last*/
                               counts.back()
                               );
   }
@@ -172,7 +176,7 @@ count_if(StationOptions && options, InputIt first, InputIt last, UnaryPredicate 
 }
 
 
-template<typename InputIt, typename UnaryPredicate>
+template <typename InputIt, typename UnaryPredicate>
 typename std::iterator_traits<InputIt>::difference_type inline
 count_if(InputIt first, InputIt last, UnaryPredicate p)
 {
@@ -180,22 +184,23 @@ count_if(InputIt first, InputIt last, UnaryPredicate p)
 }
 
 
-template<typename InputIt, typename T>
+template <typename InputIt, typename T>
 void inline
 fill(StationOptions && options, InputIt first, InputIt last, T const & value)
 {
-  std::vector<InputIt> partition_iterators = stations::get_partition_iterators(first, last, options);
+  std::vector<InputIt> partition_iterators =
+    stations::get_partition_iterators(first, last, options);
   std::vector<std::shared_ptr<T> > counts;
   stations::Station fill_station(options);
 
   for (long i = 0; i < static_cast<long>(partition_iterators.size()) - 1; ++i)
   {
     fill_station.add_work([value](InputIt first, InputIt last)
-                          {
-                            std::fill(first, last, value);
-                          } /*function*/,
+      {
+        std::fill(first, last, value);
+      } /*function*/,
                           partition_iterators[i], /*first*/
-                          partition_iterators[i+1] /*last*/
+                          partition_iterators[i + 1] /*last*/
                           );
   }
 
@@ -203,7 +208,7 @@ fill(StationOptions && options, InputIt first, InputIt last, T const & value)
 }
 
 
-template<typename InputIt, typename T>
+template <typename InputIt, typename T>
 void inline
 fill(InputIt first, InputIt last, T const & value)
 {
@@ -213,22 +218,25 @@ fill(InputIt first, InputIt last, T const & value)
 }
 
 
-template<typename InputIt, typename UnaryFunction>
+template <typename InputIt, typename UnaryFunction>
 UnaryFunction inline
 for_each(StationOptions && options, InputIt first, InputIt last, UnaryFunction f)
 {
-  std::vector<InputIt> partition_iterators = stations::get_partition_iterators(first, last, options);
+  std::vector<InputIt> partition_iterators =
+    stations::get_partition_iterators(first, last, options);
   stations::Station for_each_station(options);
 
   for (long i = 0; i < static_cast<long>(partition_iterators.size()) - 1; ++i)
-    for_each_station.add_work([f](InputIt it){f(*it);} /*function*/, partition_iterators[i] /*it*/);
+    for_each_station.add_work([f](InputIt it){
+        f(*it);
+      } /*function*/, partition_iterators[i] /*it*/);
 
   for_each_station.join();
   return f;
 }
 
 
-template<typename InputIt, typename UnaryFunction>
+template <typename InputIt, typename UnaryFunction>
 UnaryFunction inline
 for_each(InputIt first, InputIt last, UnaryFunction f)
 {
@@ -238,7 +246,7 @@ for_each(InputIt first, InputIt last, UnaryFunction f)
 }
 
 
-template<typename InputIt, typename UnaryPredicate>
+template <typename InputIt, typename UnaryPredicate>
 bool inline
 none_of(StationOptions && options, InputIt first, InputIt last, UnaryPredicate f)
 {
@@ -246,7 +254,7 @@ none_of(StationOptions && options, InputIt first, InputIt last, UnaryPredicate f
 }
 
 
-template<typename InputIt, typename UnaryPredicate>
+template <typename InputIt, typename UnaryPredicate>
 bool inline
 none_of(InputIt first, InputIt last, UnaryPredicate f)
 {
@@ -258,25 +266,26 @@ template <typename InputIt>
 void inline
 sort(StationOptions && options, InputIt first, InputIt last)
 {
-  // std::cout << "Num threads = " << options.get_num_threads() << std::endl;
-  std::vector<InputIt> partition_iterators = stations::get_partition_iterators(first, last, options);
-  // std::cout << "iterator size = " << partition_iterators.size() << " " << (options.boss_thread_mode == HARD_WORKING_BOSS) << std::endl;
+  std::vector<InputIt> partition_iterators =
+    stations::get_partition_iterators(first, last, options);
+
   stations::Station sort_station(options);
-  // std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
 
   for (long i = 0; i < static_cast<long>(partition_iterators.size()) - 1; ++i)
   {
-    sort_station.add_work([](InputIt first, InputIt last){std::sort(first, last);} /*function*/,
+    sort_station.add_work([](InputIt first, InputIt last){
+        std::sort(first, last);
+      } /*function*/,
                           partition_iterators[i], /*first*/
-                          partition_iterators[i+1] /*last*/
+                          partition_iterators[i + 1] /*last*/
                           );
   }
 
-  sort_station.join(); // After this join, all partitions are sorted, then we need to merge the sorted partition
-  // std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
-  // std::cout << "sorting: " << static_cast<std::chrono::duration<double> >(t2 - t1).count() << std::endl;
+  // After this join, all partitions are sorted, then we need to merge the sorted partition
+  sort_station.join();
 
-  // I have tried to implement a multi-threaded merge, but actually the single threaded version always performs faster
+  // I have tried to implement a multi-threaded merge, but actually the single threaded version
+  // was always faster! x(
   for (std::size_t d = 2; d < partition_iterators.size(); ++d)
   {
     std::inplace_merge(partition_iterators[0], partition_iterators[d - 1], partition_iterators[d]);

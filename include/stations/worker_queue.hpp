@@ -20,6 +20,7 @@ public:
   std::atomic<std::size_t> queue_size;
   std::size_t completed_items = 0;
 
+
   WorkerQueue()
   {
     queue_size = 0;
