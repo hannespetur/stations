@@ -154,7 +154,7 @@ count_if(StationOptions && options, InputIt first, InputIt last, UnaryPredicate 
     count_if_station.add_work([p](InputIt first, InputIt last, std::shared_ptr<T> ret)
       {
 #ifdef D_GLIBCXX_PARALLEL
-        *ret = std::count_if(first, last, p, __gnu_parallel::sequential_tag());                         //
+        *ret = std::count_if(first, last, p, __gnu_parallel::sequential_tag());
 #else
         *ret = std::count_if(first, last, p);
 #endif
@@ -300,16 +300,15 @@ sort(InputIt first, InputIt last)
   StationOptions options;
   std::size_t const container_size = std::distance(first, last);
 
-  if (options.get_num_threads() > 2 && container_size >= 1000 && container_size <= 10000)
+  if (options.num_threads > 2 && container_size >= 1000 && container_size <= 10000)
   {
     options.set_num_threads(2);
   }
-  else if (options.get_num_threads() > 4 && container_size >= 10000 && container_size <= 100000)
+  else if (options.num_threads > 4 && container_size >= 10000 && container_size <= 100000)
   {
     options.set_num_threads(4);
   }
 
-  // std::cout << "Threads = " << options.get_num_threads() << std::endl;
   stations::sort(std::move(options), first, last);
 }
 

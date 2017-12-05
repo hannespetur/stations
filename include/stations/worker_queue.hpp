@@ -21,64 +21,81 @@ public:
   std::size_t completed_items = 0;
 
 
-  WorkerQueue()
-  {
-    queue_size = 0;
-  }
-
-
-  void inline
-  add_work_to_queue(std::function<void()> work)
-  {
-    function_queue.push_back(work);
-
-    if (queue_size == 0 && completed_items == 0)
-      item_to_run = function_queue.begin();
-
-    ++queue_size;
-  }
-
-
-  std::size_t inline
-  get_number_of_items_in_queue() const
-  {
-    return queue_size;
-  }
-
-
-  std::size_t inline
-  get_number_of_completed_items() const
-  {
-    return completed_items;
-  }
-
-
-  void inline
-  operator()()
-  {
-    while (true)
-    {
-      if (queue_size > 0)
-      {
-        if (completed_items != 0)
-          ++item_to_run;
-
-        (*item_to_run)();
-        ++completed_items;
-        --queue_size;
-      }
-      else if (finished)
-      {
-        return;
-      }
-      else
-      {
-        std::this_thread::sleep_for(std::chrono::microseconds(10));   // 0.01 ms
-      }
-    }
-  }
-
+  WorkerQueue();
+  void add_work_to_queue(std::function<void()> work);
+  std::size_t get_number_of_items_in_queue() const;
+  std::size_t get_number_of_completed_items() const;
+  void operator()();
 
 };
+
+} // namespace stations
+
+
+/* IMPLEMENTATION*/
+
+
+namespace stations
+{
+
+
+inline
+WorkerQueue::WorkerQueue()
+{
+  queue_size = 0;
+}
+
+
+void inline
+WorkerQueue::add_work_to_queue(std::function<void()> work)
+{
+  function_queue.push_back(work);
+
+  if (queue_size == 0 && completed_items == 0)
+    item_to_run = function_queue.begin();
+
+  ++queue_size;
+}
+
+
+std::size_t inline
+WorkerQueue::get_number_of_items_in_queue() const
+{
+  return queue_size;
+}
+
+
+std::size_t inline
+WorkerQueue::get_number_of_completed_items() const
+{
+  return completed_items;
+}
+
+
+void inline
+WorkerQueue::operator()()
+{
+  while (true)
+  {
+    if (queue_size > 0)
+    {
+      if (completed_items != 0)
+        ++item_to_run;
+
+      (*item_to_run)();
+      ++completed_items;
+      --queue_size;
+    }
+    else if (finished)
+    {
+      return;
+    }
+    else
+    {
+      std::this_thread::sleep_for(std::chrono::microseconds(10));     // 0.01 ms
+    }
+  }
+}
+
 
 } // namespace stations

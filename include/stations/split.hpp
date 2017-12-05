@@ -20,7 +20,8 @@ split(TContainer & container, std::size_t const PARTS)
 
   for (long i = static_cast<long>(PARTS) - 1; i >= 0; --i)
   {
-    std::size_t const part_size = container_original_size / PARTS + (container_original_size % PARTS > static_cast<std::size_t>(i));
+    std::size_t const part_size = container_original_size / PARTS +
+                                  (container_original_size % PARTS > static_cast<std::size_t>(i));
     split_container[i] =
       std::make_shared<TContainer>(std::make_move_iterator(std::next(container.end(), -part_size)),
                                    std::make_move_iterator(container.end())
@@ -35,19 +36,21 @@ split(TContainer & container, std::size_t const PARTS)
 }
 
 
-template <typename BidirectionalIterator> inline
+template <typename BidirectionalIterator>
+inline
 std::vector<std::shared_ptr<std::vector<typename BidirectionalIterator::value_type> > >
 split(BidirectionalIterator first, BidirectionalIterator last, StationOptions const & options)
 {
   using TContainer = std::vector<typename BidirectionalIterator::value_type>;
-  std::size_t const PARTS = options.get_num_threads();
+  std::size_t const PARTS = options.num_threads;
   std::vector<std::shared_ptr<TContainer> > split_container;
   split_container.resize(PARTS);
   std::size_t const container_original_size = std::distance(first, last);
 
   for (long i = static_cast<long>(PARTS) - 1; i >= 0; --i)
   {
-    std::size_t const part_size = container_original_size / PARTS + (container_original_size % PARTS > static_cast<std::size_t>(i));
+    std::size_t const part_size = container_original_size / PARTS +
+                                  (container_original_size % PARTS > static_cast<std::size_t>(i));
     split_container[i] =
       std::make_shared<TContainer>(std::make_move_iterator(std::next(last, -part_size)),
                                    std::make_move_iterator(last)
@@ -60,7 +63,8 @@ split(BidirectionalIterator first, BidirectionalIterator last, StationOptions co
 }
 
 
-template <typename BidirectionalIterator> inline
+template <typename BidirectionalIterator>
+inline
 std::vector<std::shared_ptr<std::vector<typename BidirectionalIterator::value_type> > >
 split(BidirectionalIterator first, BidirectionalIterator last, std::size_t const PARTS)
 {

@@ -20,14 +20,15 @@ main()
   std::vector<int> ints = stations_internal::get_random_ints<std::vector<int> >(N);
   stations::StationOptions options;
   // ++options.num_threads;
-  options.chunk_size = 0;
-  // options.boss_thread_mode = stations::PATIENT_BOSS;
+  options.num_threads = 8;
+  options.chunk_size = N / 100;
+  //options.boss_thread_mode = stations::PATIENT_BOSS;
 
   // Benchmark starts here
   auto t1 = std::chrono::system_clock::now();
   std::size_t const COUNT =
     stations::count_if(std::move(options), ints.begin(), ints.end(), [](int n){
-    return n < 0;
+    return n < 0 && (-n % 2) == 0 && ((n * n / 2) % 2 == 0);
   });
 
   auto t2 = std::chrono::system_clock::now();
