@@ -2,6 +2,7 @@
 #include <algorithm> // std::all_of, std::min_element
 #include <iostream> // std::cout
 #include <thread> // std::thread
+#include <utility> // std::forward
 
 #include <stations/station_options.hpp> // stations::WorkerQueue
 #include <stations/partition_iterator.hpp> // stations::get_partition_iterators
@@ -63,6 +64,32 @@ public:
         work(args ...); // If all queues are of maximum size, use the boss thread instead
         ++main_thread_work_count;
       }
+    }
+  }
+
+
+  template <typename TWork, typename ... Args>
+  add(TWork && work, Args ... args)
+  {
+    // For backwards compability
+    this->add_work(std::forward<TWork>(work), args ...);
+  }
+
+
+  template <typename TWork, typename ... Args>
+  void inline
+  add_to_thread(std::size_t const thread_id, TWork && work, Args ... args)
+  {
+    std::size_t const thread_count = options.num_threads;
+
+    if (thread_id % thread_count == thread_count - 1)
+    {
+      work(args ...);
+      ++main_thread_work_count;
+    }
+    else
+    {
+      queues[thread_id % thread_count]->add_work_to_queue([&work, args ...] {work(args ...);});
     }
   }
 
