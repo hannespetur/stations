@@ -26,9 +26,10 @@ private:
   std::size_t main_thread_work_count = 0; /** Number of jobs the main thread has run. */
   std::vector<std::thread> workers; /** List of threads. */
   Queues queues; /** Each thread has a unique worker queue. */
-  StationOptions options; /** Options and policies this station will follow */
 
 public:
+  StationOptions options; /** Options and policies this station will follow */
+
   Station(StationOptions _options);
   Station(std::size_t const num_threads = 1, std::size_t const max_queue_size = 2);
   ~Station();
